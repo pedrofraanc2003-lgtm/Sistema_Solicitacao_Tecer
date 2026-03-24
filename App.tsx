@@ -104,6 +104,31 @@ const App: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  const mergeWorkshopKanbanItems = useCallback(
+    (localItems: WorkshopKanbanItem[], remoteItems: WorkshopKanbanItem[]) => {
+      const merged = new Map<string, WorkshopKanbanItem>();
+
+      remoteItems.forEach(item => {
+        merged.set(item.id, item);
+      });
+
+      localItems.forEach(item => {
+        const remoteItem = merged.get(item.id);
+        if (!remoteItem) {
+          merged.set(item.id, item);
+          return;
+        }
+
+        const localUpdatedAt = new Date(item.updatedAt).getTime();
+        const remoteUpdatedAt = new Date(remoteItem.updatedAt).getTime();
+        merged.set(item.id, localUpdatedAt >= remoteUpdatedAt ? item : remoteItem);
+      });
+
+      return Array.from(merged.values());
+    },
+    []
+  );
+
   // Initial Data Fetch from Supabase
   useEffect(() => {
     const loadSupabaseData = async () => {
@@ -130,7 +155,9 @@ const App: React.FC = () => {
         else setUsers(MOCK_USERS);
 
         if (remoteLogs) setAuditLogs(remoteLogs);
-        if (remoteWorkshopKanbanItems) setWorkshopKanbanItems(remoteWorkshopKanbanItems);
+        if (remoteWorkshopKanbanItems) {
+          setWorkshopKanbanItems(prev => mergeWorkshopKanbanItems(prev, remoteWorkshopKanbanItems));
+        }
         
         setIsCloudOnline(health.ok && !!remoteRequests);
         setHasInitialLoaded(true);
@@ -145,7 +172,7 @@ const App: React.FC = () => {
     };
 
     loadSupabaseData();
-  }, []);
+  }, [mergeWorkshopKanbanItems]);
 
   // Sync helpers
   const performSync = useCallback(async (table: string, data: any[]) => {
@@ -302,7 +329,9 @@ const App: React.FC = () => {
       if (remoteEquipments) setEquipments(remoteEquipments);
       if (remoteUsers) setUsers(remoteUsers.length > 0 ? remoteUsers : MOCK_USERS);
       if (remoteLogs) setAuditLogs(remoteLogs);
-      if (remoteWorkshopKanbanItems) setWorkshopKanbanItems(remoteWorkshopKanbanItems);
+      if (remoteWorkshopKanbanItems) {
+        setWorkshopKanbanItems(prev => mergeWorkshopKanbanItems(prev, remoteWorkshopKanbanItems));
+      }
       
       setLastRefresh(new Date());
     } catch (err) {
@@ -311,7 +340,7 @@ const App: React.FC = () => {
     } finally {
       setIsRefreshing(false);
     }
-  }, [isEditing]);
+  }, [isEditing, mergeWorkshopKanbanItems]);
 
   useEffect(() => {
     const interval = setInterval(() => {
