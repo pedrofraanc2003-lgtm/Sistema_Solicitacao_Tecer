@@ -114,19 +114,19 @@ const Login: React.FC<LoginProps> = ({ onLogin, users }) => {
         <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-[#003b75] via-[#004b93] to-[#0065c3] p-12 text-white">
           <div>
             <p className="text-[11px] uppercase tracking-[0.34em] text-white/60 font-bold">TECER PCM</p>
-            <h1 className="mt-5 font-display text-5xl font-extrabold leading-[0.95]">Operação mais clara, madura e confiável.</h1>
-            <p className="mt-6 max-w-md text-sm leading-7 text-white/76">
+            <h1 className="mt-5 font-display text-5xl font-extrabold leading-[0.95] !text-white">Operação mais clara, madura e confiável.</h1>
+            <p className="mt-6 max-w-md text-sm leading-7 !text-white/76">
               Plataforma central para gestão de solicitações, materiais, ativos operacionais e rastreabilidade de execução.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
               <p className="text-[10px] uppercase tracking-[0.22em] text-white/55 font-bold">Padrão visual</p>
-              <p className="mt-2 text-lg font-semibold">Corporativo e clean</p>
+              <p className="mt-2 text-lg font-semibold !text-white">Corporativo e clean</p>
             </div>
             <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
               <p className="text-[10px] uppercase tracking-[0.22em] text-white/55 font-bold">Foco</p>
-              <p className="mt-2 text-lg font-semibold">Clareza operacional</p>
+              <p className="mt-2 text-lg font-semibold !text-white">Clareza operacional</p>
             </div>
           </div>
         </div>
