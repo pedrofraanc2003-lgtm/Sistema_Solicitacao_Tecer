@@ -157,31 +157,6 @@ export const syncWorkshopKanbanItems = async (items: WorkshopKanbanItem[]): Prom
       created_at: item.createdAt,
       updated_at: item.updatedAt,
     }));
-    const currentIds = cleanItems.map(item => item.id);
-
-    const { data: remoteItems, error: fetchError } = await supabase
-      .from('workshop_kanban_items')
-      .select('id');
-
-    if (fetchError) {
-      console.warn(`Falha ao listar registros de "workshop_kanban_items": ${fetchError.message}`);
-      return false;
-    }
-
-    const remoteIds = (remoteItems ?? []).map(item => String(item.id));
-    const idsToDelete = remoteIds.filter(id => !currentIds.includes(id));
-
-    if (idsToDelete.length > 0) {
-      const { error: deleteError } = await supabase
-        .from('workshop_kanban_items')
-        .delete()
-        .in('id', idsToDelete);
-
-      if (deleteError) {
-        console.warn(`Falha ao remover registros de "workshop_kanban_items": ${deleteError.message}`);
-        return false;
-      }
-    }
 
     if (databaseRows.length === 0) {
       return true;
@@ -193,6 +168,30 @@ export const syncWorkshopKanbanItems = async (items: WorkshopKanbanItem[]): Prom
 
     if (upsertError) {
       console.warn(`Erro de API no Supabase (workshop_kanban_items): ${upsertError.message}`);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.warn(getNetworkMessage('workshop_kanban_items', error));
+    return false;
+  }
+};
+
+export const deleteWorkshopKanbanItem = async (itemId: string): Promise<boolean> => {
+  if (!supabase) {
+    console.warn('Exclusão ignorada para "workshop_kanban_items": Supabase não configurado.');
+    return false;
+  }
+
+  try {
+    const { error } = await supabase
+      .from('workshop_kanban_items')
+      .delete()
+      .eq('id', itemId);
+
+    if (error) {
+      console.warn(`Falha ao remover registro de "workshop_kanban_items": ${error.message}`);
       return false;
     }
 

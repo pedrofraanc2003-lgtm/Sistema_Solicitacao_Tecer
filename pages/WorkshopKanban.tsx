@@ -19,6 +19,7 @@ import {
   WorkshopKanbanStatus,
   WorkshopMaintenanceType,
 } from '../types';
+import { deleteWorkshopKanbanItem } from '../services/supabase';
 
 interface WorkshopKanbanProps {
   user: User;
@@ -204,12 +205,21 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
     resetForm();
   };
 
-  const handleRemove = (item: WorkshopKanbanItem) => {
+  const handleRemove = async (item: WorkshopKanbanItem) => {
     if (item.status !== WorkshopKanbanStatus.LIBERADO) {
       return;
     }
 
+    const previousItems = items;
     setItems(prev => prev.filter(current => current.id !== item.id));
+
+    const deleteSucceeded = await deleteWorkshopKanbanItem(item.id);
+    if (!deleteSucceeded) {
+      setItems(previousItems);
+      window.alert('Não foi possível remover o equipamento do Kanban neste momento.');
+      return;
+    }
+
     addAuditLog({
       actionType: 'Exclusão',
       entity: 'Kanban Oficina',
@@ -332,7 +342,9 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
             <h3 className="mt-1 text-3xl font-display font-extrabold">Status dos equipamentos</h3>
           </div>
           <p className="text-xs text-tecer-grayMed">
-            {canManage ? 'Arraste os cards ou use os botões para mover o equipamento.' : 'Consulta visual do fluxo da oficina.'}
+            {canManage
+              ? 'Arraste os cards ou use os botões para mover o equipamento.'
+              : 'Consulta visual do fluxo da oficina.'}
           </p>
         </div>
 
@@ -355,7 +367,7 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
               }}
               className={`rounded-[28px] border-2 bg-white dark:bg-tecer-darkCard p-4 lg:p-5 shadow-lg ${STATUS_STYLES[status].columnBorder}`}
             >
-              <div className={`mb-4 rounded-[22px] p-4 border ${STATUS_STYLES[status].columnBorder} ${STATUS_STYLES[status].columnBg}`}>
+              <div className={`mb-4 rounded-[22px] border p-4 ${STATUS_STYLES[status].columnBorder} ${STATUS_STYLES[status].columnBg}`}>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className={`h-4 w-4 rounded-full shadow-sm ${STATUS_STYLES[status].accent}`} />
@@ -388,7 +400,7 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          {canManage && <GripVertical size={14} className="text-tecer-grayMed shrink-0" />}
+                          {canManage && <GripVertical size={14} className="shrink-0 text-tecer-grayMed" />}
                           <span className={`inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.12em] shadow-sm ${STATUS_STYLES[status].tag}`}>
                             {resolveEquipmentTag(item)}
                           </span>
@@ -412,7 +424,7 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                         {status === WorkshopKanbanStatus.LIBERADO && canManage && (
                           <button
                             type="button"
-                            onClick={() => handleRemove(item)}
+                            onClick={() => void handleRemove(item)}
                             className="rounded-full p-2 text-red-500 hover:bg-red-50"
                             title="Remover do Kanban"
                           >
@@ -432,12 +444,12 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                     </p>
 
                     {canManage && (
-                      <div className="mt-4 flex items-center justify-between gap-2 border-t border-gray-100 dark:border-gray-700 pt-4">
+                      <div className="mt-4 flex items-center justify-between gap-2 border-t border-gray-100 pt-4 dark:border-gray-700">
                         <button
                           type="button"
                           disabled={status === WorkshopKanbanStatus.PENDENTE}
                           onClick={() => moveItem(item, 'previous')}
-                          className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                          className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700"
                         >
                           <ArrowLeft size={16} />
                           Voltar
@@ -498,14 +510,14 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
             </div>
 
             {!canManage && (
-              <div className="mb-4 rounded-2xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40 px-4 py-3 text-sm text-tecer-grayMed">
+              <div className="mb-4 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-tecer-grayMed dark:border-gray-700 dark:bg-gray-800/40">
                 Apenas Admin e PCM podem adicionar e movimentar cards.
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 xl:grid-cols-12">
               <div className="xl:col-span-3">
-                <label className="block text-xs font-bold uppercase text-tecer-grayMed mb-2">
+                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">
                   Tag <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -515,7 +527,7 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                   onFocus={() => setIsEditing(true)}
                   onBlur={() => setIsEditing(false)}
                   onChange={event => setFormData(prev => ({ ...prev, equipmentId: event.target.value }))}
-                  className="w-full rounded-xl bg-gray-50 dark:bg-gray-800 p-3"
+                  className="w-full rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
                 >
                   <option value="">Selecionar</option>
                   {equipmentOptions.map(equipment => (
@@ -527,7 +539,7 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
               </div>
 
               <div className="xl:col-span-4">
-                <label className="block text-xs font-bold uppercase text-tecer-grayMed mb-2">
+                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">
                   Nome do equipamento
                 </label>
                 <input
@@ -535,12 +547,12 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                   readOnly
                   value={selectedEquipment?.name || ''}
                   placeholder="Preenchido automaticamente"
-                  className="w-full rounded-xl bg-gray-50 dark:bg-gray-800 p-3"
+                  className="w-full rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
                 />
               </div>
 
               <div className="xl:col-span-2">
-                <label className="block text-xs font-bold uppercase text-tecer-grayMed mb-2">
+                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">
                   Manutenção <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -555,7 +567,7 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                       maintenanceType: event.target.value as WorkshopMaintenanceType,
                     }))
                   }
-                  className="w-full rounded-xl bg-gray-50 dark:bg-gray-800 p-3"
+                  className="w-full rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
                 >
                   {Object.values(WorkshopMaintenanceType).map(type => (
                     <option key={type} value={type}>
@@ -566,7 +578,7 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
               </div>
 
               <div className="xl:col-span-3">
-                <label className="block text-xs font-bold uppercase text-tecer-grayMed mb-2">
+                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">
                   Descrição <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -578,7 +590,7 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                   onBlur={() => setIsEditing(false)}
                   onChange={event => setFormData(prev => ({ ...prev, description: event.target.value }))}
                   placeholder="Serviço a executar"
-                  className="w-full rounded-xl bg-gray-50 dark:bg-gray-800 p-3"
+                  className="w-full rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
                 />
               </div>
 
@@ -593,7 +605,7 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                 <button
                   type="submit"
                   disabled={!canManage}
-                  className="flex items-center justify-center gap-3 rounded-2xl bg-tecer-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-tecer-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center justify-center gap-3 rounded-2xl bg-tecer-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-tecer-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Plus size={18} />
                   Novo item
