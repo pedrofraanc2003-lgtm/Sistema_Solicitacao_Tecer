@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ClipboardList,
+  Edit3,
   GripVertical,
   Plus,
   Trash2,
@@ -89,6 +90,8 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
 }) => {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<WorkshopKanbanItem | null>(null);
+  const [editDescription, setEditDescription] = useState('');
   const [formData, setFormData] = useState<FormState>({
     equipmentId: '',
     maintenanceType: WorkshopMaintenanceType.MECANICA,
@@ -227,6 +230,46 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
     updateItemStatus(item.id, targetStatus);
   };
 
+  const openEditModal = (item: WorkshopKanbanItem) => {
+    setEditingItem(item);
+    setEditDescription(item.description);
+    setIsEditing(true);
+  };
+
+  const closeEditModal = () => {
+    setEditingItem(null);
+    setEditDescription('');
+    setIsEditing(false);
+  };
+
+  const handleSaveDescription = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingItem) return;
+
+    const nextDescription = editDescription.trim();
+    if (!nextDescription || nextDescription === editingItem.description) {
+      closeEditModal();
+      return;
+    }
+
+    setItems(prev =>
+      prev.map(item =>
+        item.id === editingItem.id
+          ? { ...item, description: nextDescription, updatedAt: new Date().toISOString() }
+          : item
+      )
+    );
+
+    addAuditLog({
+      actionType: 'Edição',
+      entity: 'Kanban Oficina',
+      entityId: resolveEquipmentTag(editingItem),
+      summary: `Atualizou a descrição do serviço do equipamento ${resolveEquipmentTag(editingItem)} no Kanban da Oficina`,
+    });
+
+    closeEditModal();
+  };
+
   return (
     <div className="tecer-page space-y-6">
       <section className="rounded-[24px] border border-gray-100 dark:border-gray-700 bg-white dark:bg-tecer-darkCard px-6 py-5">
@@ -355,16 +398,28 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                         </h5>
                       </div>
 
-                      {status === WorkshopKanbanStatus.LIBERADO && canManage && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemove(item)}
-                          className="rounded-full p-2 text-red-500 hover:bg-red-50"
-                          title="Remover do Kanban"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {canManage && (
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(item)}
+                            className="rounded-full p-2 text-tecer-primary hover:bg-blue-50"
+                            title="Editar descrição"
+                          >
+                            <Edit3 size={17} />
+                          </button>
+                        )}
+                        {status === WorkshopKanbanStatus.LIBERADO && canManage && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemove(item)}
+                            className="rounded-full p-2 text-red-500 hover:bg-red-50"
+                            title="Remover do Kanban"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-tecer-grayDark">
@@ -542,6 +597,63 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                 >
                   <Plus size={18} />
                   Novo item
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingItem && (
+        <div className="tecer-modal-backdrop fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl rounded-[28px] border border-gray-100 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-tecer-darkCard">
+            <div className="mb-5 flex items-center justify-between gap-4 border-b border-gray-100 pb-4 dark:border-gray-700">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.22em] text-tecer-grayMed font-bold">
+                  Editar serviço
+                </p>
+                <h3 className="mt-1 text-2xl font-display font-extrabold">
+                  {resolveEquipmentTag(editingItem)} - {resolveEquipmentName(editingItem)}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={closeEditModal}
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 text-tecer-grayMed hover:text-tecer-primary dark:border-gray-700"
+                title="Fechar modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDescription} className="space-y-5">
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">
+                  Descrição do serviço <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  required
+                  value={editDescription}
+                  onChange={event => setEditDescription(event.target.value)}
+                  className="min-h-32 w-full rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
+                  placeholder="Descreva o serviço a executar"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="rounded-2xl border border-gray-200 px-5 py-3 text-sm font-semibold dark:border-gray-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex items-center justify-center gap-2 rounded-2xl bg-tecer-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-tecer-primary/20"
+                >
+                  <Edit3 size={16} />
+                  Salvar descrição
                 </button>
               </div>
             </form>
