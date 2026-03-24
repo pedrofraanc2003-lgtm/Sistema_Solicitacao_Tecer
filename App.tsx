@@ -461,7 +461,7 @@ const App: React.FC = () => {
         <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-tecer-darkCard shadow-xl transform transition-transform lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="flex flex-col h-full">
             <div className="p-6 flex items-start justify-between">
-              <div className="flex items-center gap-4">
+              <div className="tecer-sidebar-brand rounded-[28px] px-4 py-4 flex items-center gap-4 flex-1">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white p-2 shadow-lg">
                   <img src={tecerLogo} alt="Logo da TECER" className="max-h-full max-w-full object-contain" />
                 </div>
@@ -476,7 +476,7 @@ const App: React.FC = () => {
               </button>
             </div>
             <div className="px-6 pb-4">
-              <div className="rounded-3xl border border-slate-200 bg-white/72 px-4 py-4 backdrop-blur-sm shadow-sm">
+              <div className="tecer-sidebar-banner rounded-3xl px-4 py-4 backdrop-blur-sm shadow-sm">
                 <p className="text-[10px] uppercase tracking-[0.22em] text-tecer-grayMed">Ambiente corporativo</p>
                 <p className="mt-2 text-sm text-tecer-grayDark">Operação centralizada de solicitações, ativos e indicadores.</p>
               </div>
@@ -491,7 +491,7 @@ const App: React.FC = () => {
               <NavItem to="/audits" icon={ShieldAlert} label="Auditoria" roles={[UserRole.ADMIN]} />
             </nav>
             <div className="p-4 border-t border-slate-200 dark:border-white/10">
-              <div className="rounded-3xl border border-slate-200 bg-white/84 p-3 shadow-sm">
+              <div className="tecer-sidebar-footer rounded-3xl p-3 shadow-sm">
                 <div className="flex items-center gap-3 px-1 py-1">
                   <div className="w-11 h-11 rounded-2xl bg-tecer-primary/10 flex items-center justify-center text-tecer-primary font-bold shadow-lg">
                   {user.name.charAt(0)}
@@ -510,8 +510,8 @@ const App: React.FC = () => {
           </div>
         </aside>
 
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-          <header className="h-20 bg-white dark:bg-tecer-darkCard shadow-sm flex items-center justify-between px-4 lg:px-8 shrink-0">
+        <div className="tecer-main-content flex-1 flex flex-col min-w-0 overflow-hidden relative">
+          <header className="tecer-topbar h-20 bg-white dark:bg-tecer-darkCard shadow-sm flex items-center justify-between px-4 lg:px-8 shrink-0">
             <div className="flex items-center gap-4">
               <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-tecer-grayMed">
                 <Menu size={24} />
@@ -535,14 +535,14 @@ const App: React.FC = () => {
                 <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
                 <span>Atualizado {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
               </div>
-              <button onClick={handleRefresh} className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors border border-transparent" title="Sincronizar dados agora">
+              <button onClick={handleRefresh} className="tecer-topbar-icon p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors border border-transparent" title="Sincronizar dados agora">
                 <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
               </button>
-              <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors border border-transparent">
+              <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} className="tecer-topbar-icon p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors border border-transparent">
                 {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
               </button>
               <div className="relative">
-                <button onClick={() => setIsNotifOpen(!isNotifOpen)} className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors relative border border-transparent">
+                <button onClick={() => setIsNotifOpen(!isNotifOpen)} className="tecer-topbar-icon p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors relative border border-transparent">
                   <Bell size={20} />
                   {unreadCount > 0 && (
                     <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white dark:border-tecer-darkCard">
@@ -552,7 +552,7 @@ const App: React.FC = () => {
                 </button>
 
                 {isNotifOpen && (
-                  <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-tecer-darkCard rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-[100] overflow-hidden">
+                  <div className="tecer-notif-panel absolute right-0 mt-3 w-80 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 z-[100] overflow-hidden">
                     <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
                       <div>
                         <p className="text-[10px] uppercase tracking-[0.18em] text-tecer-grayMed font-bold">Central</p>

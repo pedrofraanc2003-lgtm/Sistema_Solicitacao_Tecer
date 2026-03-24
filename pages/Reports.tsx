@@ -113,18 +113,33 @@ const Reports: React.FC<ReportsProps> = ({ requests, equipments }) => {
 
   return (
     <div className="tecer-page space-y-10 max-w-7xl mx-auto animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gray-100 dark:border-gray-700 pb-8">
-        <div>
-          <div className="flex items-center gap-3 text-tecer-primary dark:text-tecer-secondary font-bold uppercase tracking-widest text-xs mb-2">
-            <Database size={16} /> Exportação Estruturada
+      <div className="tecer-view-header">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="tecer-view-headline">
+            <div className="flex items-center gap-3 text-tecer-primary dark:text-tecer-secondary font-bold uppercase tracking-widest text-xs">
+              <Database size={16} /> Exportação Estruturada
+            </div>
+            <h2 className="font-display text-4xl font-extrabold text-tecer-grayDark dark:text-white">Relatórios para BI</h2>
+            <p className="text-tecer-grayMed text-sm">Dados formatados para importação direta no Microsoft Power BI Desktop ou Web.</p>
           </div>
-          <h2 className="font-display text-4xl font-extrabold text-tecer-grayDark dark:text-white">Relatórios para BI</h2>
-          <p className="text-tecer-grayMed text-sm mt-2">Dados formatados para importação direta no Microsoft Power BI Desktop ou Web.</p>
+          <div className="flex items-center gap-2 text-xs font-bold text-tecer-grayMed px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full">
+            <Clock size={14} />
+            Última extração em tempo real
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-xs font-bold text-tecer-grayMed px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full">
-          {/* Fix: Added Clock component usage correctly */}
-          <Clock size={14} />
-          Última extração em tempo real
+        <div className="tecer-view-summary">
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Solicitações</span>
+            <span className="tecer-view-stat-value">{requests.length}</span>
+          </div>
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Equipamentos</span>
+            <span className="tecer-view-stat-value">{equipments.length}</span>
+          </div>
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Exports</span>
+            <span className="tecer-view-stat-value">3</span>
+          </div>
         </div>
       </div>
 

@@ -32,6 +32,7 @@ const Users: React.FC<UsersProps> = ({ users, setUsers, setIsEditing, addAuditLo
       u.username.toLowerCase().includes(search.toLowerCase()) ||
       u.role.toLowerCase().includes(search.toLowerCase())
   );
+  const activeUsers = users.filter((u) => u.status === UserStatus.ATIVO).length;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,32 +116,48 @@ const Users: React.FC<UsersProps> = ({ users, setUsers, setIsEditing, addAuditLo
 
   return (
     <div className="tecer-page space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-tecer-grayMed font-bold">Administração</p>
-          <h2 className="mt-2 font-display text-3xl font-extrabold text-tecer-grayDark dark:text-white">Gestão de Usuários</h2>
-          <p className="text-tecer-grayMed text-sm mt-2">Controle de perfis e permissões do sistema</p>
+      <div className="tecer-view-header">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="tecer-view-headline">
+            <p className="tecer-view-kicker">Administração</p>
+            <h2 className="font-display text-3xl font-extrabold text-tecer-grayDark dark:text-white">Gestão de Usuários</h2>
+            <p className="text-tecer-grayMed text-sm">Controle de perfis, acessos e situação operacional dos usuários do sistema.</p>
+          </div>
+          <button
+            onClick={() => {
+              setIsModalOpen(true);
+              setIsEditing(true);
+            }}
+            className="flex items-center justify-center gap-2 bg-tecer-primary hover:bg-[#1a2e5e] text-white px-6 py-3 rounded-xl shadow-md transition-all font-semibold"
+          >
+            <Plus size={20} />
+            Cadastrar Perfil
+          </button>
         </div>
-        <button
-          onClick={() => {
-            setIsModalOpen(true);
-            setIsEditing(true);
-          }}
-          className="flex items-center justify-center gap-2 bg-tecer-primary hover:bg-[#1a2e5e] text-white px-6 py-3 rounded-xl shadow-md transition-all font-semibold"
-        >
-          <Plus size={20} />
-          Cadastrar Perfil
-        </button>
+        <div className="tecer-view-summary">
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Usuários</span>
+            <span className="tecer-view-stat-value">{users.length}</span>
+          </div>
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Ativos</span>
+            <span className="tecer-view-stat-value">{activeUsers}</span>
+          </div>
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Filtrados</span>
+            <span className="tecer-view-stat-value">{filteredUsers.length}</span>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-[24px] border border-orange-200 bg-orange-50 p-4 text-sm text-tecer-grayDark">
         <div className="flex items-start gap-3">
           <AlertTriangle size={18} className="mt-0.5 shrink-0" />
-          <span>Esta tela cria e atualiza o usuario no Supabase Authentication e sincroniza o perfil de acesso do sistema.</span>
+          <span>Esta tela cria e atualiza o usuário no Supabase Authentication e sincroniza o perfil de acesso do sistema.</span>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-tecer-darkCard p-4 rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap gap-4 items-center">
+      <div className="tecer-toolbar bg-white dark:bg-tecer-darkCard p-4 rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap gap-4 items-center">
         <div className="flex-1 min-w-[240px] relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-tecer-grayMed" size={18} />
           <input
@@ -220,7 +237,7 @@ const Users: React.FC<UsersProps> = ({ users, setUsers, setIsEditing, addAuditLo
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ex: Joao da Silva"
+                    placeholder="Ex: João da Silva"
                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-tecer-primary text-tecer-grayDark dark:text-white"
                   />
                 </div>
@@ -243,7 +260,7 @@ const Users: React.FC<UsersProps> = ({ users, setUsers, setIsEditing, addAuditLo
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-tecer-grayMed mb-2">Login (Username)</label>
+                  <label className="block text-xs font-bold uppercase text-tecer-grayMed mb-2">Login</label>
                   <input
                     required
                     type="text"

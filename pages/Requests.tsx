@@ -563,6 +563,10 @@ const Requests: React.FC<RequestsProps> = ({ user, requests, setRequests, equipm
   // Apenas Admin e PCM podem editar prazo de item, e somente após criação (modo edição).
   const canEditItemDeadline = canManageDeadlinesByRole && modalMode === 'edit';
   const nextRequestNumber = String(requests.length + 1).padStart(5, '0');
+  const overdueFilteredCount = filteredRequests.filter((req) => {
+    const deadline = getDisplayDeadline(req);
+    return deadline && new Date(deadline).getTime() < Date.now() && req.status !== RequestStatus.DISPONIVEL && req.status !== RequestStatus.CANCELADA;
+  }).length;
 
   if (viewMode === 'all' && user.role !== UserRole.ADMIN) {
     return (
@@ -579,24 +583,40 @@ const Requests: React.FC<RequestsProps> = ({ user, requests, setRequests, equipm
 
   return (
     <div className="tecer-page space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-tecer-grayMed font-bold">Fluxo operacional</p>
-          <h2 className="mt-2 font-display text-3xl font-extrabold text-tecer-grayDark dark:text-white">{viewConfig.title}</h2>
-          <p className="text-tecer-grayMed text-sm mt-2">{viewConfig.subtitle}</p>
+      <div className="tecer-view-header">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="tecer-view-headline">
+            <p className="tecer-view-kicker">Fluxo operacional</p>
+            <h2 className="font-display text-3xl font-extrabold text-tecer-grayDark dark:text-white">{viewConfig.title}</h2>
+            <p className="text-tecer-grayMed text-sm">{viewConfig.subtitle}</p>
+          </div>
+          {viewMode === 'new' && (
+            <button 
+              onClick={() => { setModalMode('create'); setIsModalOpen(true); setIsEditing(true); }}
+              className="flex items-center justify-center gap-2 bg-tecer-primary hover:bg-[#1a2e5e] text-white px-6 py-3 rounded-xl shadow-md transition-all font-semibold"
+            >
+              <Plus size={20} />
+              Nova Solicitação
+            </button>
+          )}
         </div>
-        {viewMode === 'new' && (
-          <button 
-            onClick={() => { setModalMode('create'); setIsModalOpen(true); setIsEditing(true); }}
-            className="flex items-center justify-center gap-2 bg-tecer-primary hover:bg-[#1a2e5e] text-white px-6 py-3 rounded-xl shadow-md transition-all font-semibold"
-          >
-            <Plus size={20} />
-            Nova Solicitação
-          </button>
-        )}
+        <div className="tecer-view-summary">
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Registros</span>
+            <span className="tecer-view-stat-value">{filteredRequests.length}</span>
+          </div>
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Novas</span>
+            <span className="tecer-view-stat-value">{filteredRequests.filter((req) => req.status === RequestStatus.NOVA).length}</span>
+          </div>
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Atrasadas</span>
+            <span className="tecer-view-stat-value">{overdueFilteredCount}</span>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white dark:bg-tecer-darkCard p-6 rounded-[28px] shadow-sm border border-gray-100 dark:border-gray-700 space-y-4">
+      <div className="tecer-toolbar bg-white dark:bg-tecer-darkCard p-6 rounded-[28px] shadow-sm border border-gray-100 dark:border-gray-700 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-tecer-grayMed" size={16} />

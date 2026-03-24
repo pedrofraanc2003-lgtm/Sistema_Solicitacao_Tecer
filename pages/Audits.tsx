@@ -63,18 +63,32 @@ const Audits: React.FC<AuditsProps> = ({ logs }) => {
 
   return (
     <div className="tecer-page space-y-6 flex flex-col h-full">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-tecer-grayMed font-bold">Rastreabilidade</p>
-          <h2 className="mt-2 font-display text-3xl font-extrabold flex items-center gap-2">
+      <div className="tecer-view-header">
+        <div className="tecer-view-headline">
+          <p className="tecer-view-kicker">Rastreabilidade</p>
+          <h2 className="font-display text-3xl font-extrabold flex items-center gap-2">
             <ShieldAlert className="text-tecer-primary" />
             Auditoria do Sistema
           </h2>
-          <p className="text-tecer-grayMed text-sm mt-2">Registro imutável de ações e alterações críticas</p>
+          <p className="text-tecer-grayMed text-sm">Registro imutável de ações, mudanças de status e intervenções críticas.</p>
+        </div>
+        <div className="tecer-view-summary">
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Registros</span>
+            <span className="tecer-view-stat-value">{logs.length}</span>
+          </div>
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Filtrados</span>
+            <span className="tecer-view-stat-value">{filteredLogs.length}</span>
+          </div>
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Entidades</span>
+            <span className="tecer-view-stat-value">{new Set(logs.map((log) => log.entity)).size}</span>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-tecer-darkCard p-4 rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap gap-4 items-center">
+      <div className="tecer-toolbar bg-white dark:bg-tecer-darkCard p-4 rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap gap-4 items-center">
         <div className="flex-1 min-w-[240px] relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-tecer-grayMed" size={18} />
           <input 

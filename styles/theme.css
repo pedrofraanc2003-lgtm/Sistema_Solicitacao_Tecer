@@ -250,6 +250,21 @@ textarea::placeholder {
   background: transparent;
 }
 
+.tecer-main-content {
+  position: relative;
+}
+
+.tecer-main-content::before {
+  content: "";
+  position: absolute;
+  inset: 1.5rem 1.5rem auto 1.5rem;
+  height: 18rem;
+  border-radius: 32px;
+  background:
+    linear-gradient(135deg, rgba(0, 92, 185, 0.1), rgba(72, 163, 255, 0.04) 58%, transparent 100%);
+  pointer-events: none;
+}
+
 .tecer-shell aside {
   background:
     radial-gradient(circle at top right, rgba(115, 184, 255, 0.18), transparent 28%),
@@ -352,6 +367,154 @@ textarea::placeholder {
   backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--topbar-border);
   box-shadow: 0 10px 26px rgba(16, 42, 67, 0.05) !important;
+}
+
+.tecer-sidebar-brand,
+.tecer-sidebar-banner,
+.tecer-sidebar-footer {
+  position: relative;
+  overflow: hidden;
+}
+
+.tecer-sidebar-brand {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.09));
+  box-shadow: 0 20px 36px rgba(5, 20, 39, 0.16);
+}
+
+.tecer-sidebar-banner {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.08));
+}
+
+.tecer-sidebar-footer {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.08));
+}
+
+.tecer-topbar-icon {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(241, 247, 255, 0.88));
+  border: 1px solid rgba(182, 199, 218, 0.46) !important;
+  box-shadow: var(--shadow-soft);
+}
+
+.dark .tecer-topbar-icon {
+  background: linear-gradient(180deg, rgba(17, 39, 62, 0.96), rgba(14, 31, 50, 0.94));
+  border-color: rgba(53, 98, 143, 0.58) !important;
+}
+
+.tecer-notif-panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 255, 0.98));
+  border: 1px solid rgba(182, 199, 218, 0.4);
+  box-shadow: var(--shadow-float);
+}
+
+.dark .tecer-notif-panel {
+  background: linear-gradient(180deg, rgba(16, 34, 56, 0.98), rgba(13, 34, 57, 0.96));
+  border-color: rgba(53, 98, 143, 0.5);
+}
+
+.tecer-view-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.75rem 1.9rem;
+  border-radius: 28px;
+  border: 1px solid rgba(182, 199, 218, 0.4);
+  background:
+    radial-gradient(circle at top right, rgba(72, 163, 255, 0.16), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 249, 255, 0.98));
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.tecer-view-header::after {
+  content: "";
+  position: absolute;
+  inset: auto -3rem -3rem auto;
+  width: 12rem;
+  height: 12rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(0, 92, 185, 0.12), transparent 70%);
+  pointer-events: none;
+}
+
+.dark .tecer-view-header {
+  border-color: rgba(53, 98, 143, 0.52);
+  background:
+    radial-gradient(circle at top right, rgba(72, 163, 255, 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(16, 34, 56, 0.96), rgba(12, 32, 53, 0.94));
+}
+
+.tecer-view-headline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  position: relative;
+  z-index: 1;
+}
+
+.tecer-view-kicker {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.26em;
+  font-weight: 800;
+  color: var(--color-muted);
+}
+
+.tecer-view-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.9rem;
+  position: relative;
+  z-index: 1;
+}
+
+.tecer-view-stat {
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(182, 199, 218, 0.34);
+  background: rgba(255, 255, 255, 0.66);
+  backdrop-filter: blur(10px);
+}
+
+.dark .tecer-view-stat {
+  border-color: rgba(53, 98, 143, 0.42);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tecer-view-stat span {
+  display: block;
+}
+
+.tecer-view-stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 800;
+  color: var(--color-muted);
+}
+
+.tecer-view-stat-value {
+  margin-top: 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.tecer-toolbar {
+  padding: 1.1rem 1.25rem;
+  border-radius: 24px;
+  border: 1px solid rgba(182, 199, 218, 0.38);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(245, 249, 255, 0.96));
+  box-shadow: var(--shadow-soft);
+}
+
+.dark .tecer-toolbar {
+  border-color: rgba(53, 98, 143, 0.46);
+  background: linear-gradient(180deg, rgba(16, 34, 56, 0.95), rgba(13, 34, 57, 0.94));
 }
 
 .tecer-shell [class*="bg-white"] {

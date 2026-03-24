@@ -42,6 +42,7 @@ const Equipments: React.FC<EquipmentsProps> = ({ user, equipments, setEquipments
     eq.name.toLowerCase().includes(search.toLowerCase()) ||
     eq.type.toLowerCase().includes(search.toLowerCase())
   );
+  const activeCount = equipments.filter(eq => eq.status === UserStatus.ATIVO).length;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,24 +104,40 @@ const Equipments: React.FC<EquipmentsProps> = ({ user, equipments, setEquipments
 
   return (
     <div className="tecer-page space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-tecer-grayMed font-bold">Ativos operacionais</p>
-          <h2 className="mt-2 font-display text-3xl font-extrabold">Base de Equipamentos</h2>
-          <p className="text-tecer-grayMed text-sm mt-2">Gerenciamento de TAGs e ativos operacionais</p>
+      <div className="tecer-view-header">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="tecer-view-headline">
+            <p className="tecer-view-kicker">Ativos operacionais</p>
+            <h2 className="font-display text-3xl font-extrabold">Base de Equipamentos</h2>
+            <p className="text-tecer-grayMed text-sm">Gerenciamento de TAGs, categorias e disponibilidade operacional dos ativos.</p>
+          </div>
+          {canManage && (
+            <button 
+              onClick={() => { setIsModalOpen(true); setIsEditing(true); }}
+              className="flex items-center justify-center gap-2 bg-tecer-primary hover:bg-[#1a2e5e] text-white px-6 py-3 rounded-xl shadow-md transition-all font-semibold"
+            >
+              <Plus size={20} />
+              Cadastrar Equipamento
+            </button>
+          )}
         </div>
-        {canManage && (
-          <button 
-            onClick={() => { setIsModalOpen(true); setIsEditing(true); }}
-            className="flex items-center justify-center gap-2 bg-tecer-primary hover:bg-[#1a2e5e] text-white px-6 py-3 rounded-xl shadow-md transition-all font-semibold"
-          >
-            <Plus size={20} />
-            Cadastrar Equipamento
-          </button>
-        )}
+        <div className="tecer-view-summary">
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Total</span>
+            <span className="tecer-view-stat-value">{equipments.length}</span>
+          </div>
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Ativos</span>
+            <span className="tecer-view-stat-value">{activeCount}</span>
+          </div>
+          <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Filtrados</span>
+            <span className="tecer-view-stat-value">{filteredEquipments.length}</span>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white dark:bg-tecer-darkCard p-4 rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap gap-4 items-center">
+      <div className="tecer-toolbar bg-white dark:bg-tecer-darkCard p-4 rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap gap-4 items-center">
         <div className="flex-1 min-w-[240px] relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-tecer-grayMed" size={18} />
           <input 
