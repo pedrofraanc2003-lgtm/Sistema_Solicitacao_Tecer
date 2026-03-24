@@ -20,18 +20,18 @@
             },
             colors: {
               tecer: {
-                primary: '#004B93',
-                secondary: '#0065C3',
-                bgLight: '#F2F6FB',
-                grayMed: '#5F738A',
-                grayDark: '#102A43',
-                darkBg: '#081A31',
-                darkCard: '#102743',
+                primary: '#005CB9',
+                secondary: '#0C74D4',
+                bgLight: '#EEF4FB',
+                grayMed: '#647B93',
+                grayDark: '#16324F',
+                darkBg: '#071728',
+                darkCard: '#102238',
               },
               urgency: {
-                high: '#EF4444',
-                medium: '#B7791F',
-                low: '#1F8A62',
+                high: '#C94E53',
+                medium: '#B67828',
+                low: '#19805D',
               }
             }
           }
@@ -42,7 +42,10 @@
       body {
         margin: 0;
         font-family: 'IBM Plex Sans', sans-serif;
-        background: linear-gradient(180deg, #f2f6fb 0%, #e9f0f8 100%);
+        background:
+          radial-gradient(circle at top left, rgba(72, 163, 255, 0.12), transparent 24%),
+          radial-gradient(circle at 85% 18%, rgba(0, 92, 185, 0.09), transparent 20%),
+          linear-gradient(180deg, #eef4fb 0%, #e4edf8 56%, #d8e5f4 100%);
       }
       ::-webkit-scrollbar {
         width: 8px;
@@ -52,11 +55,11 @@
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #bfd0e2;
+        background: #b2c6da;
         border-radius: 4px;
       }
       .dark ::-webkit-scrollbar-thumb {
-        background: #355b84;
+        background: #325f8a;
       }
     </style>
   <script type="importmap">

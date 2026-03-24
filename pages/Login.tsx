@@ -111,7 +111,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, users }) => {
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-tecer-primary/10 blur-3xl" />
       </div>
       <div className="relative max-w-[1080px] w-full grid lg:grid-cols-[1.05fr_0.95fr] rounded-[32px] overflow-hidden border border-white/50 dark:border-white/10 shadow-2xl shadow-slate-900/10">
-        <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-[#003b75] via-[#004b93] to-[#0065c3] p-12 text-white">
+        <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-[#083b74] via-[#005cb9] to-[#0c74d4] p-12 text-white">
           <div>
             <p className="text-[11px] uppercase tracking-[0.34em] text-white/60 font-bold">TECER PCM</p>
             <h1 className="mt-5 font-display text-5xl font-extrabold leading-[0.95] !text-white">Operação mais clara, madura e confiável.</h1>

@@ -20,6 +20,14 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ requests }) => {
   const navigate = useNavigate();
+  const chartPalette = [
+    'var(--color-primary)',
+    'var(--color-secondary)',
+    'var(--color-accent)',
+    'var(--color-warning)',
+    'var(--color-success)',
+    'var(--color-muted-soft)',
+  ];
 
   const stats = useMemo(() => {
     const total = requests.length;
@@ -91,7 +99,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests }) => {
 
   const StatCard = ({ label, value, icon: Icon, colorClass, subValue }: any) => (
     <div className="bg-white dark:bg-tecer-darkCard p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col relative overflow-hidden">
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-white/0 via-white/40 to-white/0 opacity-60" />
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-tecer-primary/40 to-transparent opacity-80" />
       <div className="flex items-center justify-between mb-5">
         <span className="text-[11px] uppercase tracking-[0.18em] font-bold text-tecer-grayMed">{label}</span>
         <div className={`p-3 rounded-2xl shadow-lg ${colorClass}`}>
@@ -178,23 +186,23 @@ const Dashboard: React.FC<DashboardProps> = ({ requests }) => {
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(86, 112, 136, 0.24)" />
-                <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} stroke="#567088" />
-                <YAxis fontSize={10} axisLine={false} tickLine={false} stroke="#567088" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
+                <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} stroke="var(--chart-axis)" />
+                <YAxis fontSize={10} axisLine={false} tickLine={false} stroke="var(--chart-axis)" />
                 <Tooltip 
-                  cursor={{fill: 'rgba(10, 155, 216, 0.08)'}}
+                  cursor={{fill: 'rgba(15, 115, 204, 0.08)'}}
                   contentStyle={{ 
                     borderRadius: '16px',
-                    border: '1px solid rgba(86, 112, 136, 0.22)',
-                    boxShadow: '0 18px 36px rgba(8, 22, 38, 0.18)',
-                    backgroundColor: 'rgba(245, 250, 255, 0.96)',
+                    border: '1px solid var(--tooltip-border)',
+                    boxShadow: 'var(--shadow-card)',
+                    backgroundColor: 'var(--tooltip-bg)',
                     backdropFilter: 'blur(14px)',
-                    color: '#081626'
+                    color: 'var(--color-text)'
                   }} 
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index % 2 === 0 ? 'var(--color-primary)' : 'var(--color-secondary)'} />
+                    <Cell key={`cell-${index}`} fill={chartPalette[index % chartPalette.length]} />
                   ))}
                 </Bar>
               </BarChart>
@@ -220,7 +228,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests }) => {
               .map(req => {
                 const isOverdue = !!req.deadline && new Date(req.deadline) < new Date();
                 return (
-                  <div key={req.id} className="p-3 border-l-4 rounded bg-gray-50 dark:bg-gray-800/50 flex flex-col gap-1 transition-all hover:translate-x-1" 
+                  <div key={req.id} className="p-4 border-l-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 flex flex-col gap-1 transition-all hover:translate-x-1" 
                        style={{ borderColor: isOverdue ? 'var(--color-danger)' : (req.urgency === UrgencyLevel.ALTA ? 'var(--color-danger)' : 'var(--color-warning)') }}>
                     <div className="flex justify-between items-start">
                       <span className="text-[10px] font-bold text-tecer-primary dark:text-tecer-secondary">{req.id}</span>
