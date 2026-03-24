@@ -125,7 +125,17 @@ export const fetchTable = async (tableName: string) => {
 export const fetchWorkshopKanbanItems = async (): Promise<WorkshopKanbanItem[] | null> => {
   const data = await fetchTable('workshop_kanban_items');
   if (!data) return null;
-  return data as WorkshopKanbanItem[];
+  return (data as any[]).map(item => ({
+    id: String(item.id),
+    equipmentId: String(item.equipment_id),
+    tag: String(item.tag),
+    equipmentName: String(item.equipment_name),
+    maintenanceType: item.maintenance_type,
+    description: String(item.description),
+    status: item.status,
+    createdAt: String(item.created_at),
+    updatedAt: String(item.updated_at),
+  })) as WorkshopKanbanItem[];
 };
 
 export const syncWorkshopKanbanItems = async (items: WorkshopKanbanItem[]): Promise<boolean> => {
@@ -136,6 +146,17 @@ export const syncWorkshopKanbanItems = async (items: WorkshopKanbanItem[]): Prom
 
   try {
     const cleanItems = JSON.parse(JSON.stringify(items)) as WorkshopKanbanItem[];
+    const databaseRows = cleanItems.map(item => ({
+      id: item.id,
+      equipment_id: item.equipmentId,
+      tag: item.tag,
+      equipment_name: item.equipmentName,
+      maintenance_type: item.maintenanceType,
+      description: item.description,
+      status: item.status,
+      created_at: item.createdAt,
+      updated_at: item.updatedAt,
+    }));
     const currentIds = cleanItems.map(item => item.id);
 
     const { data: remoteItems, error: fetchError } = await supabase
@@ -162,13 +183,13 @@ export const syncWorkshopKanbanItems = async (items: WorkshopKanbanItem[]): Prom
       }
     }
 
-    if (cleanItems.length === 0) {
+    if (databaseRows.length === 0) {
       return true;
     }
 
     const { error: upsertError } = await supabase
       .from('workshop_kanban_items')
-      .upsert(cleanItems, { onConflict: 'id' });
+      .upsert(databaseRows, { onConflict: 'id' });
 
     if (upsertError) {
       console.warn(`Erro de API no Supabase (workshop_kanban_items): ${upsertError.message}`);
