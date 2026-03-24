@@ -267,11 +267,11 @@ textarea::placeholder {
 
 .tecer-shell aside {
   background:
-    radial-gradient(circle at top right, rgba(115, 184, 255, 0.14), transparent 24%),
-    radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.05), transparent 18%),
-    linear-gradient(180deg, var(--sidebar-bg-start) 0%, var(--sidebar-bg-mid) 56%, var(--sidebar-bg-end) 100%) !important;
-  border-right: 1px solid rgba(7, 29, 56, 0.18);
-  box-shadow: 18px 0 42px rgba(6, 24, 46, 0.18) !important;
+    radial-gradient(circle at top right, rgba(92, 181, 255, 0.22), transparent 22%),
+    radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.04), transparent 18%),
+    linear-gradient(180deg, #08294a 0%, #0a3e73 30%, #005cb9 68%, #00458d 100%) !important;
+  border-right: 1px solid rgba(5, 21, 41, 0.42);
+  box-shadow: 24px 0 52px rgba(3, 16, 31, 0.28) !important;
 }
 
 .tecer-shell aside::after {
@@ -301,7 +301,7 @@ textarea::placeholder {
 .tecer-shell aside span,
 .tecer-shell aside a,
 .tecer-shell aside button {
-  color: var(--sidebar-text) !important;
+  color: rgba(245, 249, 255, 0.96) !important;
 }
 
 .tecer-shell aside .text-tecer-primary,
@@ -312,23 +312,23 @@ textarea::placeholder {
 
 .tecer-shell aside nav a,
 .tecer-shell aside nav button {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(247, 251, 255, 0.96) !important;
-  box-shadow: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(8, 28, 50, 0.16);
+  color: rgba(250, 252, 255, 0.98) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
   backdrop-filter: blur(14px);
 }
 
 .tecer-shell aside nav a:hover,
 .tecer-shell aside nav button:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
-  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.24);
 }
 
 .tecer-shell aside nav .bg-tecer-primary {
-  background: var(--sidebar-active-bg) !important;
-  border-color: rgba(255, 255, 255, 0.32);
-  box-shadow: 0 16px 30px rgba(3, 23, 46, 0.22) !important;
+  background: linear-gradient(135deg, #ffffff 0%, #edf5ff 100%) !important;
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 18px 34px rgba(2, 19, 38, 0.26) !important;
 }
 
 .tecer-shell aside nav .bg-tecer-primary,
@@ -345,7 +345,7 @@ textarea::placeholder {
 .tecer-shell aside .bg-white,
 .tecer-shell aside .bg-white\/72,
 .tecer-shell aside .bg-white\/84 {
-  background: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(8, 28, 50, 0.18) !important;
 }
 
 .tecer-shell aside .shadow-sm,
@@ -377,19 +377,23 @@ textarea::placeholder {
 }
 
 .tecer-sidebar-brand {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-  box-shadow: 0 20px 36px rgba(5, 20, 39, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(180deg, rgba(8, 28, 50, 0.24), rgba(8, 28, 50, 0.14));
+  box-shadow: 0 24px 40px rgba(3, 16, 31, 0.22);
 }
 
 .tecer-sidebar-banner {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(180deg, rgba(8, 28, 50, 0.2), rgba(8, 28, 50, 0.1));
 }
 
 .tecer-sidebar-footer {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(180deg, rgba(8, 28, 50, 0.22), rgba(8, 28, 50, 0.1));
+}
+
+.tecer-sidebar-panel {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 16px 28px rgba(2, 14, 28, 0.16);
 }
 
 .tecer-nav-item {
@@ -406,7 +410,7 @@ textarea::placeholder {
 }
 
 .tecer-nav-item--idle {
-  color: rgba(243, 248, 255, 0.96) !important;
+  color: rgba(243, 248, 255, 0.98) !important;
 }
 
 .tecer-nav-item--idle:hover {
@@ -426,6 +430,11 @@ textarea::placeholder {
   background: linear-gradient(180deg, var(--color-primary), var(--color-secondary));
 }
 
+.tecer-nav-item--active svg,
+.tecer-nav-item--active span {
+  color: #0b4d96 !important;
+}
+
 .tecer-nav-subitem {
   position: relative;
   min-height: 42px;
@@ -433,7 +442,7 @@ textarea::placeholder {
 
 .tecer-nav-subitem--idle {
   border-color: rgba(255, 255, 255, 0.08) !important;
-  color: rgba(232, 241, 251, 0.84) !important;
+  color: rgba(233, 242, 252, 0.9) !important;
 }
 
 .tecer-nav-subitem--active {
@@ -441,6 +450,16 @@ textarea::placeholder {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(221, 237, 255, 0.92) 100%) !important;
   border-color: rgba(255, 255, 255, 0.28) !important;
   box-shadow: 0 12px 24px rgba(3, 23, 46, 0.16) !important;
+}
+
+.tecer-sidebar .text-tecer-primary,
+.tecer-sidebar .text-tecer-secondary,
+.tecer-sidebar .text-tecer-grayDark {
+  color: #ffffff !important;
+}
+
+.tecer-sidebar .text-tecer-grayMed {
+  color: rgba(220, 233, 247, 0.82) !important;
 }
 
 .tecer-topbar-icon {

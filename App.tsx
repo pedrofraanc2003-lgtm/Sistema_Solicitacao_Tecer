@@ -458,7 +458,7 @@ const App: React.FC = () => {
   return (
     <HashRouter>
       <div className={`tecer-shell min-h-screen bg-tecer-bgLight dark:bg-tecer-darkBg text-tecer-grayDark dark:text-gray-100 flex overflow-hidden relative`}>
-        <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-tecer-darkCard shadow-xl transform transition-transform lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`tecer-sidebar fixed inset-y-0 left-0 z-50 w-72 shadow-xl transform transition-transform lg:relative lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="flex flex-col h-full">
             <div className="p-6 flex items-start justify-between">
               <div className="tecer-sidebar-brand rounded-[28px] px-4 py-4 flex items-center gap-4 flex-1">
@@ -476,7 +476,7 @@ const App: React.FC = () => {
               </button>
             </div>
             <div className="px-6 pb-4">
-              <div className="tecer-sidebar-banner rounded-3xl px-4 py-4 backdrop-blur-sm shadow-sm">
+              <div className="tecer-sidebar-panel tecer-sidebar-banner rounded-3xl px-4 py-4 backdrop-blur-sm shadow-sm">
                 <p className="text-[10px] uppercase tracking-[0.22em] text-tecer-grayMed">Ambiente corporativo</p>
                 <p className="mt-2 text-sm text-tecer-grayDark">Operação centralizada de solicitações, ativos e indicadores.</p>
               </div>
@@ -491,7 +491,7 @@ const App: React.FC = () => {
               <NavItem to="/audits" icon={ShieldAlert} label="Auditoria" roles={[UserRole.ADMIN]} />
             </nav>
             <div className="p-4 border-t border-slate-200 dark:border-white/10">
-              <div className="tecer-sidebar-footer rounded-3xl p-3 shadow-sm">
+              <div className="tecer-sidebar-panel tecer-sidebar-footer rounded-3xl p-3 shadow-sm">
                 <div className="flex items-center gap-3 px-1 py-1">
                   <div className="w-11 h-11 rounded-2xl bg-tecer-primary/10 flex items-center justify-center text-tecer-primary font-bold shadow-lg">
                   {user.name.charAt(0)}
