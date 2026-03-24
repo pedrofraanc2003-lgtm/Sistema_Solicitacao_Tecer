@@ -365,7 +365,7 @@ const App: React.FC = () => {
         className={`tecer-nav-item flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
           isActive 
             ? 'tecer-nav-item--active bg-tecer-primary text-white shadow-md' 
-            : 'tecer-nav-item--idle text-white/90 hover:bg-white/15'
+            : 'tecer-nav-item--idle text-white/90'
         }`}
       >
         <Icon size={20} />
@@ -389,7 +389,7 @@ const App: React.FC = () => {
       return `tecer-nav-subitem ml-8 flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors ${
         isActive
           ? 'tecer-nav-subitem--active bg-tecer-primary text-white shadow-md'
-          : 'tecer-nav-subitem--idle text-white/80 hover:bg-white/12'
+          : 'tecer-nav-subitem--idle text-white/80'
       }`;
     };
 
@@ -400,7 +400,7 @@ const App: React.FC = () => {
           className={`tecer-nav-item w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${
             isRequestsSection
               ? 'tecer-nav-item--active bg-tecer-primary text-white shadow-md'
-              : 'tecer-nav-item--idle text-white/90 hover:bg-white/15'
+              : 'tecer-nav-item--idle text-white/90'
           }`}
         >
           <span className="flex items-center gap-3">
