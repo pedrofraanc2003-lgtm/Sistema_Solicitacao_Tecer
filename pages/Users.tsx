@@ -105,7 +105,7 @@ const Users: React.FC<UsersProps> = ({ users, setUsers, setIsEditing, addAuditLo
 
   const getRoleBadge = (role: UserRole) => {
     const styles: Record<UserRole, string> = {
-      [UserRole.ADMIN]: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+      [UserRole.ADMIN]: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
       [UserRole.PCM]: 'bg-tecer-primary text-white',
       [UserRole.LIDERANCA]: 'bg-tecer-secondary text-white',
       [UserRole.COMPRAS]: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
@@ -133,7 +133,7 @@ const Users: React.FC<UsersProps> = ({ users, setUsers, setIsEditing, addAuditLo
         </button>
       </div>
 
-      <div className="rounded-[24px] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+      <div className="rounded-[24px] border border-orange-200 bg-orange-50 p-4 text-sm text-tecer-grayDark">
         <div className="flex items-start gap-3">
           <AlertTriangle size={18} className="mt-0.5 shrink-0" />
           <span>Esta tela cria e atualiza o usuario no Supabase Authentication e sincroniza o perfil de acesso do sistema.</span>

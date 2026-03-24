@@ -104,14 +104,14 @@ const Login: React.FC<LoginProps> = ({ onLogin, users }) => {
   };
 
   return (
-    <div className="min-h-screen bg-tecer-bgLight dark:bg-[#0F172A] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-tecer-bgLight dark:bg-tecer-darkBg flex items-center justify-center p-4">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-tecer-primary/10 to-transparent" />
         <div className="absolute -top-10 left-0 h-72 w-72 rounded-full bg-tecer-secondary/10 blur-3xl" />
         <div className="absolute bottom-0 right-0 h-80 w-80 rounded-full bg-tecer-primary/10 blur-3xl" />
       </div>
       <div className="relative max-w-[1080px] w-full grid lg:grid-cols-[1.05fr_0.95fr] rounded-[32px] overflow-hidden border border-white/50 dark:border-white/10 shadow-2xl shadow-slate-900/10">
-        <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-[#17345f] via-[#1f3f74] to-[#2b6a9f] p-12 text-white">
+        <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-[#003b75] via-[#004b93] to-[#0065c3] p-12 text-white">
           <div>
             <p className="text-[11px] uppercase tracking-[0.34em] text-white/60 font-bold">TECER PCM</p>
             <h1 className="mt-5 font-display text-5xl font-extrabold leading-[0.95]">Operação mais clara, madura e confiável.</h1>
@@ -130,7 +130,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, users }) => {
             </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-[#111D2F]">
+        <div className="bg-white dark:bg-tecer-darkCard">
           <div className="p-8">
             <div className="flex flex-col items-center mb-10">
               <div className="mb-5 flex min-h-[88px] w-full items-center justify-center rounded-[24px] border border-slate-200 bg-white px-6 py-4 shadow-sm">
@@ -165,7 +165,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, users }) => {
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       placeholder="Seu login institucional ou e-mail"
-                      className="w-full bg-gray-50 dark:bg-[#0F172A] border border-gray-200 dark:border-gray-700 pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-tecer-primary transition-all text-tecer-grayDark dark:text-white placeholder-gray-400"
+                      className="w-full bg-gray-50 dark:bg-tecer-darkBg border border-gray-200 dark:border-gray-700 pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-tecer-primary transition-all text-tecer-grayDark dark:text-white placeholder-gray-400"
                     />
                   </div>
                 </div>
@@ -179,7 +179,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, users }) => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Sua senha do Supabase Auth"
-                      className="w-full bg-gray-50 dark:bg-[#0F172A] border border-gray-200 dark:border-gray-700 pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-tecer-primary transition-all text-tecer-grayDark dark:text-white placeholder-gray-400"
+                      className="w-full bg-gray-50 dark:bg-tecer-darkBg border border-gray-200 dark:border-gray-700 pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-tecer-primary transition-all text-tecer-grayDark dark:text-white placeholder-gray-400"
                     />
                   </div>
                 </div>
@@ -213,7 +213,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, users }) => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="usuario@empresa.com"
-                      className="w-full bg-gray-50 dark:bg-[#0F172A] border border-gray-200 dark:border-gray-700 pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-tecer-primary transition-all text-tecer-grayDark dark:text-white placeholder-gray-400"
+                      className="w-full bg-gray-50 dark:bg-tecer-darkBg border border-gray-200 dark:border-gray-700 pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-tecer-primary transition-all text-tecer-grayDark dark:text-white placeholder-gray-400"
                     />
                   </div>
                 </div>
@@ -239,7 +239,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, users }) => {
 
             {view === 'reset' && (
               <div className="space-y-6">
-                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm leading-6 text-blue-900">
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5 text-sm leading-6 text-tecer-primary">
                   A redefinição de senha agora é feita diretamente pelo link seguro enviado pelo Supabase para o seu e-mail.
                 </div>
                 <button

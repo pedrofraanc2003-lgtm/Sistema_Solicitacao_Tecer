@@ -434,7 +434,7 @@ const App: React.FC = () => {
 
   if (isAuthLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-tecer-bgLight dark:bg-[#0F172A] text-tecer-grayDark dark:text-white">
+      <div className="min-h-screen flex items-center justify-center bg-tecer-bgLight dark:bg-tecer-darkBg text-tecer-grayDark dark:text-white">
         Validando sessao...
       </div>
     );

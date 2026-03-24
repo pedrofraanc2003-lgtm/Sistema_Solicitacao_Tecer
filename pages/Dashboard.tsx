@@ -194,7 +194,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests }) => {
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#1F3F74' : '#2A8CC9'} />
+                    <Cell key={`cell-${index}`} fill={index % 2 === 0 ? 'var(--color-primary)' : 'var(--color-secondary)'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -221,7 +221,7 @@ const Dashboard: React.FC<DashboardProps> = ({ requests }) => {
                 const isOverdue = !!req.deadline && new Date(req.deadline) < new Date();
                 return (
                   <div key={req.id} className="p-3 border-l-4 rounded bg-gray-50 dark:bg-gray-800/50 flex flex-col gap-1 transition-all hover:translate-x-1" 
-                       style={{ borderColor: isOverdue ? '#EF4444' : (req.urgency === UrgencyLevel.ALTA ? '#EF4444' : '#F59E0B') }}>
+                       style={{ borderColor: isOverdue ? 'var(--color-danger)' : (req.urgency === UrgencyLevel.ALTA ? 'var(--color-danger)' : 'var(--color-warning)') }}>
                     <div className="flex justify-between items-start">
                       <span className="text-[10px] font-bold text-tecer-primary dark:text-tecer-secondary">{req.id}</span>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${isOverdue ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>

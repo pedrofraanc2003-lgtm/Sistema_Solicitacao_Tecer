@@ -415,7 +415,7 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                           <button
                             type="button"
                             onClick={() => openEditModal(item)}
-                            className="rounded-full p-2 text-tecer-primary hover:bg-blue-50"
+                            className="rounded-full p-2 text-tecer-primary hover:bg-blue-50 dark:hover:bg-blue-900/20"
                             title="Editar descrição"
                           >
                             <Edit3 size={17} />

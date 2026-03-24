@@ -148,7 +148,7 @@ const Reports: React.FC<ReportsProps> = ({ requests, equipments }) => {
           description="Lista técnica de ativos e TAGs operacionais para correlação de manutenções por equipamento."
           icon={Wrench}
           onExport={exportEquipments}
-          colorClass="bg-orange-500"
+          colorClass="bg-blue-500"
         />
       </div>
 
