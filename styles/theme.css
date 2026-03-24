@@ -8,8 +8,8 @@
   --color-secondary-strong: #0051a0;
   --color-secondary-soft: #e7f1fd;
   --color-accent: #2a7bd1;
-  --color-bg: #f4f7fb;
-  --color-bg-soft: #eaf0f7;
+  --color-bg: #f6f8fc;
+  --color-bg-soft: #edf3f9;
   --color-surface: rgba(255, 255, 255, 0.94);
   --color-surface-soft: #f7faff;
   --color-surface-strong: #ffffff;
@@ -26,7 +26,7 @@
   --color-info: #176fc1;
   --color-info-soft: #e6f1fc;
   --shadow-soft: 0 10px 26px rgba(16, 42, 67, 0.08);
-  --shadow-card: 0 18px 40px rgba(16, 42, 67, 0.1);
+  --shadow-card: 0 14px 32px rgba(16, 42, 67, 0.08);
   --shadow-float: 0 30px 64px rgba(16, 42, 67, 0.16);
   --shadow-focus: 0 0 0 4px rgba(0, 101, 195, 0.16);
   --radius-sm: 12px;
@@ -76,8 +76,8 @@ body {
   font-family: var(--font-sans);
   color: var(--color-text);
   background:
-    radial-gradient(circle at top left, rgba(0, 101, 195, 0.06), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(0, 75, 147, 0.05), transparent 24%),
+    radial-gradient(circle at top left, rgba(0, 101, 195, 0.04), transparent 22%),
+    radial-gradient(circle at bottom right, rgba(0, 75, 147, 0.035), transparent 22%),
     linear-gradient(180deg, var(--color-bg) 0%, var(--color-bg-soft) 100%);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -186,10 +186,10 @@ textarea::placeholder {
 
 .tecer-shell aside {
   background:
-    radial-gradient(circle at top right, rgba(98, 174, 255, 0.12), transparent 30%),
-    linear-gradient(180deg, #0b3f78 0%, #004b93 60%, #003d7b 100%) !important;
-  border-right: 1px solid rgba(8, 40, 76, 0.3);
-  box-shadow: 18px 0 42px rgba(6, 24, 46, 0.18) !important;
+    radial-gradient(circle at top right, rgba(98, 174, 255, 0.16), transparent 30%),
+    linear-gradient(180deg, #0b3d74 0%, #004b93 58%, #003a72 100%) !important;
+  border-right: 1px solid rgba(8, 40, 76, 0.22);
+  box-shadow: 16px 0 36px rgba(6, 24, 46, 0.14) !important;
 }
 
 .dark .tecer-shell aside {
@@ -214,7 +214,7 @@ textarea::placeholder {
 .tecer-shell aside span,
 .tecer-shell aside a,
 .tecer-shell aside button {
-  color: rgba(244, 248, 253, 0.9) !important;
+  color: rgba(244, 248, 253, 0.88) !important;
 }
 
 .tecer-shell aside .text-tecer-primary,
@@ -226,21 +226,21 @@ textarea::placeholder {
 .tecer-shell aside nav a,
 .tecer-shell aside nav button {
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   color: #f6f9fd !important;
   box-shadow: none !important;
 }
 
 .tecer-shell aside nav a:hover,
 .tecer-shell aside nav button:hover {
-  background: rgba(255, 255, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.16) !important;
   border-color: rgba(255, 255, 255, 0.16);
 }
 
 .tecer-shell aside nav .bg-tecer-primary {
   background: linear-gradient(135deg, #ffffff 0%, #e3f0ff 100%) !important;
   border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 14px 28px rgba(3, 23, 46, 0.18) !important;
+  box-shadow: 0 10px 22px rgba(3, 23, 46, 0.16) !important;
 }
 
 .tecer-shell aside nav .bg-tecer-primary,
@@ -257,7 +257,7 @@ textarea::placeholder {
 .tecer-shell aside .bg-white,
 .tecer-shell aside .bg-white\/72,
 .tecer-shell aside .bg-white\/84 {
-  background: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.14) !important;
 }
 
 .tecer-shell aside .shadow-sm,
@@ -277,7 +277,7 @@ textarea::placeholder {
   background: rgba(255, 255, 255, 0.88) !important;
   backdrop-filter: blur(18px);
   border-bottom: 1px solid rgba(180, 199, 221, 0.5);
-  box-shadow: 0 8px 20px rgba(16, 42, 67, 0.04) !important;
+  box-shadow: 0 6px 18px rgba(16, 42, 67, 0.035) !important;
 }
 
 .dark .tecer-shell header {
@@ -292,11 +292,11 @@ textarea::placeholder {
 }
 
 .tecer-shell [class*="bg-gray-50"] {
-  background: #f5f8fc !important;
+  background: #f6f9fd !important;
 }
 
 .tecer-shell [class*="bg-gray-100"] {
-  background: #edf3fa !important;
+  background: #eff4fa !important;
 }
 
 .dark .tecer-shell [class*="dark:bg-gray-800"],
@@ -331,7 +331,7 @@ textarea::placeholder {
 .tecer-shell button.bg-tecer-primary,
 .tecer-shell [class*="bg-tecer-primary"] {
   color: #ffffff !important;
-  box-shadow: 0 14px 28px rgba(0, 75, 147, 0.18) !important;
+  box-shadow: 0 12px 24px rgba(0, 75, 147, 0.16) !important;
 }
 
 .tecer-shell button.bg-tecer-primary:hover,
@@ -582,7 +582,7 @@ textarea::placeholder {
 .tecer-status-pill {
   border: 1px solid var(--color-border);
   border-radius: 999px;
-  background: var(--color-surface-soft);
+  background: rgba(255, 255, 255, 0.82);
   color: var(--color-text);
 }
 
