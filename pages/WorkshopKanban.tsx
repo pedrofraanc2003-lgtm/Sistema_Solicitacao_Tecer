@@ -46,36 +46,40 @@ const STATUS_STYLES: Record<
   WorkshopKanbanStatus,
   {
     accent: string;
-    count: string;
-    columnBorder: string;
-    columnBg: string;
+    soft: string;
+    softBorder: string;
+    countBg: string;
+    countText: string;
     cardBorder: string;
-    tag: string;
+    tagBg: string;
   }
 > = {
   [WorkshopKanbanStatus.PENDENTE]: {
-    accent: 'bg-orange-500',
-    count: 'bg-orange-100 text-orange-700',
-    columnBorder: 'border-orange-200',
-    columnBg: 'bg-orange-50/60 dark:bg-orange-500/5',
-    cardBorder: 'border-l-orange-500',
-    tag: 'bg-orange-500 text-white',
+    accent: 'var(--color-warning)',
+    soft: 'var(--color-warning-soft)',
+    softBorder: 'rgba(182, 122, 34, 0.18)',
+    countBg: 'rgba(182, 122, 34, 0.12)',
+    countText: 'var(--color-warning)',
+    cardBorder: 'var(--color-warning)',
+    tagBg: 'var(--color-warning)',
   },
   [WorkshopKanbanStatus.EM_ANDAMENTO]: {
-    accent: 'bg-blue-500',
-    count: 'bg-blue-100 text-blue-700',
-    columnBorder: 'border-blue-200',
-    columnBg: 'bg-blue-50/60 dark:bg-blue-500/5',
-    cardBorder: 'border-l-blue-500',
-    tag: 'bg-blue-500 text-white',
+    accent: 'var(--color-secondary)',
+    soft: 'var(--color-info-soft)',
+    softBorder: 'rgba(0, 101, 195, 0.16)',
+    countBg: 'rgba(0, 101, 195, 0.12)',
+    countText: 'var(--color-secondary)',
+    cardBorder: 'var(--color-secondary)',
+    tagBg: 'var(--color-secondary)',
   },
   [WorkshopKanbanStatus.LIBERADO]: {
-    accent: 'bg-green-500',
-    count: 'bg-green-100 text-green-700',
-    columnBorder: 'border-green-200',
-    columnBg: 'bg-green-50/60 dark:bg-green-500/5',
-    cardBorder: 'border-l-green-500',
-    tag: 'bg-green-500 text-white',
+    accent: 'var(--color-success)',
+    soft: 'var(--color-success-soft)',
+    softBorder: 'rgba(31, 138, 98, 0.18)',
+    countBg: 'rgba(31, 138, 98, 0.12)',
+    countText: 'var(--color-success)',
+    cardBorder: 'var(--color-success)',
+    tagBg: 'var(--color-success)',
   },
 };
 
@@ -307,12 +311,13 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
               {STATUS_ORDER.map(status => (
                 <div
                   key={status}
-                  className={`rounded-[18px] border px-4 py-3 ${STATUS_STYLES[status].columnBorder} ${STATUS_STYLES[status].columnBg}`}
+                  className="rounded-[18px] border px-4 py-3 bg-white/88 dark:bg-gray-800/40"
+                  style={{ borderColor: STATUS_STYLES[status].softBorder }}
                 >
                   <p className="text-[10px] uppercase tracking-[0.18em] text-tecer-grayMed font-bold">
                     {status}
                   </p>
-                  <p className="mt-1 text-2xl font-display font-extrabold text-tecer-grayDark">
+                  <p className="mt-1 text-2xl font-display font-extrabold" style={{ color: STATUS_STYLES[status].accent }}>
                     {itemsByStatus[status].length}
                   </p>
                 </div>
@@ -365,12 +370,19 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                 }
                 setDraggedItemId(null);
               }}
-              className={`rounded-[28px] border-2 bg-white dark:bg-tecer-darkCard p-4 lg:p-5 shadow-lg ${STATUS_STYLES[status].columnBorder}`}
+              className="rounded-[28px] border bg-white/88 dark:bg-tecer-darkCard p-4 lg:p-5 shadow-lg"
+              style={{ borderColor: 'rgba(180, 199, 221, 0.32)' }}
             >
-              <div className={`mb-4 rounded-[22px] border p-4 ${STATUS_STYLES[status].columnBorder} ${STATUS_STYLES[status].columnBg}`}>
+              <div
+                className="mb-4 rounded-[22px] border p-4"
+                style={{
+                  borderColor: STATUS_STYLES[status].softBorder,
+                  backgroundColor: STATUS_STYLES[status].soft,
+                }}
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className={`h-4 w-4 rounded-full shadow-sm ${STATUS_STYLES[status].accent}`} />
+                    <span className="h-4 w-4 rounded-full shadow-sm" style={{ backgroundColor: STATUS_STYLES[status].accent }} />
                     <div>
                       <p className="text-[10px] uppercase tracking-[0.18em] text-tecer-grayMed font-bold">
                         Status
@@ -378,7 +390,13 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                       <h4 className="text-[2.1rem] leading-none font-display font-extrabold">{status}</h4>
                     </div>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase ${STATUS_STYLES[status].count}`}>
+                  <span
+                    className="rounded-full px-3 py-1 text-[11px] font-bold uppercase"
+                    style={{
+                      backgroundColor: STATUS_STYLES[status].countBg,
+                      color: STATUS_STYLES[status].countText,
+                    }}
+                  >
                     {itemsByStatus[status].length}
                   </span>
                 </div>
@@ -395,13 +413,17 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                       setDraggedItemId(item.id);
                     }}
                     onDragEnd={() => setDraggedItemId(null)}
-                    className={`rounded-[22px] border border-gray-100 dark:border-gray-700 border-l-4 bg-white dark:bg-tecer-darkCard p-4 shadow-sm ${STATUS_STYLES[status].cardBorder}`}
+                    className="rounded-[22px] border border-gray-100 dark:border-gray-700 border-l-4 bg-white dark:bg-tecer-darkCard p-4 shadow-sm"
+                    style={{ borderLeftColor: STATUS_STYLES[status].cardBorder }}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           {canManage && <GripVertical size={14} className="shrink-0 text-tecer-grayMed" />}
-                          <span className={`inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.12em] shadow-sm ${STATUS_STYLES[status].tag}`}>
+                          <span
+                            className="inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.12em] shadow-sm text-white"
+                            style={{ backgroundColor: STATUS_STYLES[status].tagBg }}
+                          >
                             {resolveEquipmentTag(item)}
                           </span>
                         </div>
@@ -469,7 +491,13 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                 ))}
 
                 {itemsByStatus[status].length === 0 && (
-                  <div className={`flex min-h-[180px] flex-col items-center justify-center rounded-[22px] border border-dashed p-6 text-center ${STATUS_STYLES[status].columnBorder} ${STATUS_STYLES[status].columnBg}`}>
+                  <div
+                    className="flex min-h-[180px] flex-col items-center justify-center rounded-[22px] border border-dashed p-6 text-center"
+                    style={{
+                      borderColor: STATUS_STYLES[status].softBorder,
+                      backgroundColor: STATUS_STYLES[status].soft,
+                    }}
+                  >
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-tecer-darkCard">
                       <Wrench size={20} className="text-tecer-grayMed" />
                     </div>
