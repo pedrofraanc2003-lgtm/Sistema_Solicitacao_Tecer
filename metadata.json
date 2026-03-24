@@ -1,0 +1,7 @@
+﻿{
+  "name": "19.01 Teste de Solicitação - Oficial",
+  "description": "Plataforma profissional para Planejamento e Controle de Manutenção (PCM) e Lideranças Operacionais, com foco em gestão de solicitações, equipamentos e insumos.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
