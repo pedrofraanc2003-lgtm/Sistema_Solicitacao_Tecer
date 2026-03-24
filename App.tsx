@@ -30,6 +30,8 @@ import {
   syncTable,
   fetchTable,
   getDatabaseHealthStatus,
+  fetchWorkshopKanbanItems,
+  syncWorkshopKanbanItems,
   getCurrentAuthenticatedUser,
   onSupabaseAuthStateChange,
   signOutFromSupabase,
@@ -110,11 +112,12 @@ const App: React.FC = () => {
         const health = await getDatabaseHealthStatus();
         setCloudStatusMessage([health.message, ...health.details].join(' | '));
 
-        const [remoteRequests, remoteEquipments, remoteUsers, remoteLogs] = await Promise.all([
+        const [remoteRequests, remoteEquipments, remoteUsers, remoteLogs, remoteWorkshopKanbanItems] = await Promise.all([
           fetchTable('requests'),
           fetchTable('equipments'),
           fetchTable('users'),
-          fetchTable('audit_logs')
+          fetchTable('audit_logs'),
+          fetchWorkshopKanbanItems()
         ]);
 
         if (remoteRequests) setRequests(remoteRequests.length > 0 ? remoteRequests : MOCK_REQUESTS);
@@ -127,6 +130,7 @@ const App: React.FC = () => {
         else setUsers(MOCK_USERS);
 
         if (remoteLogs) setAuditLogs(remoteLogs);
+        if (remoteWorkshopKanbanItems) setWorkshopKanbanItems(remoteWorkshopKanbanItems);
         
         setIsCloudOnline(health.ok && !!remoteRequests);
         setHasInitialLoaded(true);
@@ -183,8 +187,22 @@ const App: React.FC = () => {
   }, [auditLogs, hasInitialLoaded, performSync]);
 
   useEffect(() => {
+    if (!hasInitialLoaded) return;
     localStorage.setItem('tecer_workshop_kanban', JSON.stringify(workshopKanbanItems));
-  }, [workshopKanbanItems]);
+    const handler = setTimeout(async () => {
+      setIsCloudSyncing(true);
+      const success = await syncWorkshopKanbanItems(workshopKanbanItems);
+      setIsCloudOnline(success);
+      setCloudStatusMessage(
+        success
+          ? 'Tabela "workshop_kanban_items" sincronizada com sucesso.'
+          : 'Falha ao sincronizar "workshop_kanban_items". Verifique configuração e acesso do Supabase.'
+      );
+      setIsCloudSyncing(false);
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [workshopKanbanItems, hasInitialLoaded]);
 
   useEffect(() => {
     let isMounted = true;
@@ -266,11 +284,12 @@ const App: React.FC = () => {
       const health = await getDatabaseHealthStatus();
       setCloudStatusMessage([health.message, ...health.details].join(' | '));
 
-      const [remoteRequests, remoteEquipments, remoteUsers, remoteLogs] = await Promise.all([
+      const [remoteRequests, remoteEquipments, remoteUsers, remoteLogs, remoteWorkshopKanbanItems] = await Promise.all([
         fetchTable('requests'),
         fetchTable('equipments'),
         fetchTable('users'),
-        fetchTable('audit_logs')
+        fetchTable('audit_logs'),
+        fetchWorkshopKanbanItems()
       ]);
 
       if (remoteRequests) {
@@ -283,6 +302,7 @@ const App: React.FC = () => {
       if (remoteEquipments) setEquipments(remoteEquipments);
       if (remoteUsers) setUsers(remoteUsers.length > 0 ? remoteUsers : MOCK_USERS);
       if (remoteLogs) setAuditLogs(remoteLogs);
+      if (remoteWorkshopKanbanItems) setWorkshopKanbanItems(remoteWorkshopKanbanItems);
       
       setLastRefresh(new Date());
     } catch (err) {

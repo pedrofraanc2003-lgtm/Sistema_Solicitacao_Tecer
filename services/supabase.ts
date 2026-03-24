@@ -1,5 +1,5 @@
 import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js';
-import { UserStatus, type User } from '../types';
+import { UserStatus, type User, type WorkshopKanbanItem } from '../types';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL?.trim();
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
@@ -37,7 +37,7 @@ const getNetworkMessage = (tableName: string, error: unknown) => {
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
 
 export const getDatabaseHealthStatus = async (
-  tables = ['requests', 'equipments', 'users', 'audit_logs']
+  tables = ['requests', 'equipments', 'users', 'audit_logs', 'workshop_kanban_items']
 ): Promise<DatabaseHealthStatus> => {
   if (!supabase) {
     return {
@@ -119,6 +119,66 @@ export const fetchTable = async (tableName: string) => {
   } catch (error) {
     console.warn(getNetworkMessage(tableName, error));
     return null;
+  }
+};
+
+export const fetchWorkshopKanbanItems = async (): Promise<WorkshopKanbanItem[] | null> => {
+  const data = await fetchTable('workshop_kanban_items');
+  if (!data) return null;
+  return data as WorkshopKanbanItem[];
+};
+
+export const syncWorkshopKanbanItems = async (items: WorkshopKanbanItem[]): Promise<boolean> => {
+  if (!supabase) {
+    console.warn('Sincronização ignorada para "workshop_kanban_items": Supabase não configurado.');
+    return false;
+  }
+
+  try {
+    const cleanItems = JSON.parse(JSON.stringify(items)) as WorkshopKanbanItem[];
+    const currentIds = cleanItems.map(item => item.id);
+
+    const { data: remoteItems, error: fetchError } = await supabase
+      .from('workshop_kanban_items')
+      .select('id');
+
+    if (fetchError) {
+      console.warn(`Falha ao listar registros de "workshop_kanban_items": ${fetchError.message}`);
+      return false;
+    }
+
+    const remoteIds = (remoteItems ?? []).map(item => String(item.id));
+    const idsToDelete = remoteIds.filter(id => !currentIds.includes(id));
+
+    if (idsToDelete.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('workshop_kanban_items')
+        .delete()
+        .in('id', idsToDelete);
+
+      if (deleteError) {
+        console.warn(`Falha ao remover registros de "workshop_kanban_items": ${deleteError.message}`);
+        return false;
+      }
+    }
+
+    if (cleanItems.length === 0) {
+      return true;
+    }
+
+    const { error: upsertError } = await supabase
+      .from('workshop_kanban_items')
+      .upsert(cleanItems, { onConflict: 'id' });
+
+    if (upsertError) {
+      console.warn(`Erro de API no Supabase (workshop_kanban_items): ${upsertError.message}`);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.warn(getNetworkMessage('workshop_kanban_items', error));
+    return false;
   }
 };
 
