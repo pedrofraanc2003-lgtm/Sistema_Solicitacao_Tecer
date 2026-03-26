@@ -40,18 +40,17 @@ import {
   Comment as CommentType,
   Insumo,
   UserStatus,
-  AuditLog
 } from '../types';
-import { supabase, uploadRequestAttachment, createRequestAttachmentSignedUrl } from '../services/supabase';
+import { supabase } from '../services/supabaseClient';
+import { openRequestAttachment, RequestCreateInput, RequestUpdateInput } from '../services/data/requestApi';
+import { useToast } from '../ui/ToastProvider';
 
 interface RequestsProps {
   user: User;
   requests: MaintenanceRequest[];
-  setRequests: React.Dispatch<React.SetStateAction<MaintenanceRequest[]>>;
   equipments: Equipment[];
-  setIsEditing: (editing: boolean) => void;
-  addAuditLog: (logData: Omit<AuditLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'userRole'>) => void;
-  addNotification: (message: string, requestId: string) => void;
+  onCreateRequest: (input: RequestCreateInput) => Promise<void>;
+  onUpdateRequest: (current: MaintenanceRequest, input: RequestUpdateInput) => Promise<void>;
   viewMode?: 'new' | 'mine' | 'inProgress' | 'all';
 }
 
@@ -61,7 +60,8 @@ const IN_PROGRESS_STATUSES: RequestStatus[] = [
   RequestStatus.AGUARDANDO_ENTREGA
 ];
 
-const Requests: React.FC<RequestsProps> = ({ user, requests, setRequests, equipments, setIsEditing, addAuditLog, addNotification, viewMode = 'new' }) => {
+const Requests: React.FC<RequestsProps> = ({ user, requests, equipments, onCreateRequest, onUpdateRequest, viewMode = 'new' }) => {
+  const { pushToast } = useToast();
   const canManageDeadlinesByRole = user.role === UserRole.ADMIN || user.role === UserRole.PCM;
   const [isCodeLookupLoading, setIsCodeLookupLoading] = useState(false);
   const [codeLookupMessage, setCodeLookupMessage] = useState('');
@@ -257,7 +257,7 @@ const Requests: React.FC<RequestsProps> = ({ user, requests, setRequests, equipm
       const totalFiles = (formData.attachments?.length || 0) + filesToUpload.length + newFiles.length;
       
       if (totalFiles > 10) {
-        alert("Limite total de 10 arquivos atingido.");
+        pushToast('Limite total de 10 arquivos atingido.', 'error');
         return;
       }
       
@@ -274,9 +274,7 @@ const Requests: React.FC<RequestsProps> = ({ user, requests, setRequests, equipm
 
     try {
       setOpeningAttachmentId(attachment.id);
-      const targetUrl = attachment.path
-        ? await createRequestAttachmentSignedUrl(attachment.path)
-        : attachment.url;
+      const targetUrl = await openRequestAttachment(attachment.path, attachment.url);
 
       if (!targetUrl) {
         throw new Error('Anexo sem caminho válido para abertura.');
@@ -285,7 +283,7 @@ const Requests: React.FC<RequestsProps> = ({ user, requests, setRequests, equipm
       window.open(targetUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Não foi possível abrir o anexo.';
-      alert(message);
+      pushToast(message, 'error');
     } finally {
       setOpeningAttachmentId(null);
     }
@@ -297,127 +295,53 @@ const Requests: React.FC<RequestsProps> = ({ user, requests, setRequests, equipm
 
     const needsClassification = formData.type === RequestType.PECA || formData.type === RequestType.SERVICO;
     if (needsClassification && !formData.classification) {
-      alert(`O campo 'Classificação' é obrigatório para solicitações de ${formData.type}.`);
+      pushToast(`O campo "Classificação" é obrigatório para solicitações de ${formData.type}.`, 'error');
       return;
     }
 
     if (modalMode === 'create') {
       if (!formData.insumos || formData.insumos.length === 0) {
-        alert("É obrigatório adicionar ao menos 1 (um) insumo para criar a solicitação.");
+        pushToast('É obrigatório adicionar ao menos um insumo para criar a solicitação.', 'error');
         return;
       }
-
-      const newId = `SOL-MNT-${(requests.length + 1).toString().padStart(6, '0')}`;
-
-      let uploadedAttachments = [];
       try {
-        uploadedAttachments = await Promise.all(
-          filesToUpload.map(file => uploadRequestAttachment(newId, file))
-        );
+        await onCreateRequest({
+          type: formData.type as RequestType,
+          classification: formData.classification,
+          equipmentId: formData.equipmentId,
+          description: String(formData.description || ''),
+          urgency: formData.urgency as UrgencyLevel,
+          impact: formData.impact as OperationalImpact,
+          insumos: formData.insumos || [],
+          attachments: filesToUpload,
+        });
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Erro ao enviar anexos para o Supabase.';
-        alert(message);
+        const message = error instanceof Error ? error.message : 'Erro ao criar solicitação.';
+        pushToast(message, 'error');
         return;
       }
-
-      const newRequest: MaintenanceRequest = {
-        ...(formData as MaintenanceRequest),
-        id: newId,
-        requesterId: user.id,
-        createdAt: new Date().toISOString(),
-        deadline: undefined,
-        comments: [],
-        history: [{
-          id: Math.random().toString(),
-          newStatus: RequestStatus.NOVA,
-          userId: user.id,
-          userName: user.name,
-          timestamp: new Date().toISOString()
-        }],
-        insumos: formData.insumos || [],
-        attachments: uploadedAttachments
-      };
-      setRequests(prev => [newRequest, ...prev]);
-      
-      addAuditLog({
-        actionType: 'Criação',
-        entity: 'Solicitação',
-        entityId: newId,
-        summary: `Criou nova solicitação (${newRequest.type})`
-      });
 
     } else if (modalMode === 'edit' && selectedRequest) {
-      const isLideranca = user.role === UserRole.LIDERANCA;
-
-      let newUploaded = [];
       try {
-        newUploaded = await Promise.all(
-          filesToUpload.map(file => uploadRequestAttachment(selectedRequest.id, file))
-        );
+        await onUpdateRequest(selectedRequest, {
+          classification: formData.classification,
+          equipmentId: formData.equipmentId,
+          description: formData.description,
+          urgency: formData.urgency,
+          impact: formData.impact,
+          status: formData.status,
+          deadline: formData.deadline,
+          insumos: formData.insumos,
+          attachments: filesToUpload,
+        });
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Erro ao enviar anexos para o Supabase.';
-        alert(message);
+        const message = error instanceof Error ? error.message : 'Erro ao atualizar solicitação.';
+        pushToast(message, 'error');
         return;
       }
-      
-      const hasStatusChanged = formData.status !== selectedRequest.status;
-      const sanitizedInsumos = (formData.insumos || []).map(i => {
-        const existing = selectedRequest.insumos.find(s => s.id === i.id);
-        if (!canManageDeadlinesByRole) {
-          return { ...i, deadline: existing?.deadline };
-        }
-        return i;
-      });
-      
-      const updatedRequest: MaintenanceRequest = {
-        ...selectedRequest,
-        ...formData,
-        deadline: canManageDeadlinesByRole ? (formData.deadline || selectedRequest.deadline) : selectedRequest.deadline,
-        insumos: sanitizedInsumos,
-        attachments: [...(selectedRequest.attachments || []), ...newUploaded],
-        history: hasStatusChanged ? [
-          ...selectedRequest.history,
-          {
-            id: Math.random().toString(),
-            oldStatus: selectedRequest.status,
-            newStatus: formData.status as RequestStatus,
-            userId: user.id,
-            userName: user.name,
-            timestamp: new Date().toISOString()
-          }
-        ] : selectedRequest.history
-      } as MaintenanceRequest;
-
-      setRequests(prev => prev.map(r => r.id === selectedRequest.id ? updatedRequest : r));
-      
-      if (isLideranca) {
-        const addedInsumosCount = (formData.insumos?.length || 0) - (selectedRequest.insumos?.length || 0);
-        const addedFilesCount = newUploaded.length;
-        
-        let actions = [];
-        if (addedInsumosCount > 0) actions.push(`${addedInsumosCount} novos insumos`);
-        if (addedFilesCount > 0) actions.push(`${addedFilesCount} novos anexos`);
-        
-        if (actions.length > 0) {
-          addNotification(
-            `Liderança ${user.name} atualizou a ${selectedRequest.id}: adicionou ${actions.join(' e ')}.`,
-            selectedRequest.id
-          );
-        }
-      }
-
-      addAuditLog({
-        actionType: hasStatusChanged ? 'Status' : 'Edição',
-        entity: 'Solicitação',
-        entityId: selectedRequest.id,
-        summary: hasStatusChanged 
-          ? `Alterou status para ${formData.status}`
-          : isLideranca ? `Complementou solicitação com insumos/anexos` : `Atualizou detalhes da solicitação`
-      });
     }
 
     setIsModalOpen(false);
-    setIsEditing(false);
     resetForm();
   };
 
@@ -426,7 +350,6 @@ const Requests: React.FC<RequestsProps> = ({ user, requests, setRequests, equipm
     setFormData(req);
     setModalMode('view');
     setIsModalOpen(true);
-    setIsEditing(true);
   };
 
   const handleEditRequest = (req: MaintenanceRequest) => {
@@ -434,7 +357,6 @@ const Requests: React.FC<RequestsProps> = ({ user, requests, setRequests, equipm
     setFormData(req);
     setModalMode('edit');
     setIsModalOpen(true);
-    setIsEditing(true);
   };
 
   const resetForm = () => {
@@ -518,7 +440,7 @@ const Requests: React.FC<RequestsProps> = ({ user, requests, setRequests, equipm
     if (user.role === UserRole.LIDERANCA && modalMode === 'edit') {
       const isExisting = selectedRequest?.insumos.some(i => i.id === id);
       if (isExisting) {
-        alert("Liderança não possui permissão para remover insumos já cadastrados.");
+        pushToast('Liderança não possui permissão para remover insumos já cadastrados.', 'error');
         return;
       }
     }
@@ -592,7 +514,7 @@ const Requests: React.FC<RequestsProps> = ({ user, requests, setRequests, equipm
           </div>
           {viewMode === 'new' && (
             <button 
-              onClick={() => { setModalMode('create'); setIsModalOpen(true); setIsEditing(true); }}
+              onClick={() => { setModalMode('create'); setIsModalOpen(true); }}
               className="flex items-center justify-center gap-2 bg-tecer-primary hover:bg-[#1a2e5e] text-white px-6 py-3 rounded-xl shadow-md transition-all font-semibold"
             >
               <Plus size={20} />
@@ -763,7 +685,7 @@ const Requests: React.FC<RequestsProps> = ({ user, requests, setRequests, equipm
                   {modalMode === 'create' ? 'Nova Solicitação' : modalMode === 'edit' ? `${user.role === UserRole.LIDERANCA ? 'Complementar' : 'Tratativa'} ${selectedRequest?.id}` : `Consulta ${selectedRequest?.id}`}
                 </h3>
               </div>
-              <button onClick={() => { setIsModalOpen(false); setIsEditing(false); resetForm(); }} className="text-tecer-grayMed hover:text-red-500 transition-all hover:rotate-90">
+              <button onClick={() => { setIsModalOpen(false); resetForm(); }} className="text-tecer-grayMed hover:text-red-500 transition-all hover:rotate-90">
                 <XCircle size={28} />
               </button>
             </div>
@@ -1234,7 +1156,7 @@ formData.insumos?.map((insumo, index) => (
               </div>
 
               <div className="mt-12 flex justify-end gap-6 pt-6 border-t border-gray-100 dark:border-gray-700">
-                <button type="button" onClick={() => { setIsModalOpen(false); setIsEditing(false); resetForm(); }} className="px-8 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-xs text-tecer-grayDark dark:text-white uppercase tracking-wider">
+                <button type="button" onClick={() => { setIsModalOpen(false); resetForm(); }} className="px-8 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-xs text-tecer-grayDark dark:text-white uppercase tracking-wider">
                   Sair
                 </button>
                 {modalMode !== 'view' && (

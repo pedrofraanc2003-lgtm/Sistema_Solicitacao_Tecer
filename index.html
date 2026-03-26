@@ -5,39 +5,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TECER PCM</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['IBM Plex Sans', 'sans-serif'],
-              display: ['Manrope', 'IBM Plex Sans', 'sans-serif'],
-            },
-            colors: {
-              tecer: {
-                primary: '#005CB9',
-                secondary: '#0C74D4',
-                bgLight: '#EEF4FB',
-                grayMed: '#647B93',
-                grayDark: '#16324F',
-                darkBg: '#071728',
-                darkCard: '#102238',
-              },
-              urgency: {
-                high: '#C94E53',
-                medium: '#B67828',
-                low: '#19805D',
-              }
-            }
-          }
-        }
-      }
-    </script>
     <style>
       body {
         margin: 0;
@@ -62,22 +32,7 @@
         background: #325f8a;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.1.0",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^4.3.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.0.0/",
-    "recharts": "https://esm.sh/recharts@^2.13.0",
-    "vite": "https://esm.sh/vite@^6.0.3",
-    "lucide-react": "https://esm.sh/lucide-react@^0.474.0",
-    "react/": "https://esm.sh/react@^19.0.0/",
-    "react": "https://esm.sh/react@^19.0.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.48.1"
-  }
-}
-</script>
-</head>
+  </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>

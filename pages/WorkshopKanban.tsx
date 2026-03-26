@@ -1,119 +1,38 @@
 import React, { useMemo, useState } from 'react';
-import {
-  ArrowLeft,
-  ArrowRight,
-  ClipboardList,
-  Edit3,
-  GripVertical,
-  Plus,
-  Trash2,
-  Wrench,
-  X,
-} from 'lucide-react';
-import {
-  AuditLog,
-  Equipment,
-  User,
-  UserRole,
-  WorkshopKanbanItem,
-  WorkshopKanbanStatus,
-  WorkshopMaintenanceType,
-} from '../types';
-import { deleteWorkshopKanbanItem } from '../services/supabase';
+import { ArrowLeft, ArrowRight, ClipboardList, Edit3, GripVertical, Plus, Trash2, Wrench, X } from 'lucide-react';
+import { AuditLog, Equipment, User, UserRole, WorkshopKanbanItem, WorkshopKanbanStatus, WorkshopMaintenanceType } from '../types';
+import Button from '../ui/Button';
+import EmptyState from '../ui/EmptyState';
+import Modal from '../ui/Modal';
+import Select from '../ui/Select';
 
 interface WorkshopKanbanProps {
   user: User;
   equipments: Equipment[];
   items: WorkshopKanbanItem[];
-  setItems: React.Dispatch<React.SetStateAction<WorkshopKanbanItem[]>>;
-  setIsEditing: (editing: boolean) => void;
-  addAuditLog: (logData: Omit<AuditLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'userRole'>) => void;
+  onCreateItem: (
+    input: Omit<WorkshopKanbanItem, 'id' | 'createdAt' | 'updatedAt' | 'tag' | 'equipmentName'>,
+    equipmentId: string
+  ) => Promise<void>;
+  onSaveItem: (item: WorkshopKanbanItem, audit?: Omit<AuditLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'userRole'>) => Promise<void>;
+  onRemoveItem: (item: WorkshopKanbanItem, audit?: Omit<AuditLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'userRole'>) => Promise<void>;
 }
 
-type FormState = {
-  equipmentId: string;
-  maintenanceType: WorkshopMaintenanceType;
-  description: string;
-};
+const STATUS_ORDER = [WorkshopKanbanStatus.PENDENTE, WorkshopKanbanStatus.EM_ANDAMENTO, WorkshopKanbanStatus.LIBERADO];
 
-const STATUS_ORDER = [
-  WorkshopKanbanStatus.PENDENTE,
-  WorkshopKanbanStatus.EM_ANDAMENTO,
-  WorkshopKanbanStatus.LIBERADO,
-];
-
-const STATUS_STYLES: Record<
-  WorkshopKanbanStatus,
-  {
-    accent: string;
-    soft: string;
-    softBorder: string;
-    countBg: string;
-    countText: string;
-    cardBorder: string;
-    tagBg: string;
-  }
-> = {
-  [WorkshopKanbanStatus.PENDENTE]: {
-    accent: 'var(--color-warning)',
-    soft: 'var(--color-warning-soft)',
-    softBorder: 'rgba(182, 122, 34, 0.18)',
-    countBg: 'rgba(182, 122, 34, 0.12)',
-    countText: 'var(--color-warning)',
-    cardBorder: 'var(--color-warning)',
-    tagBg: 'var(--color-warning)',
-  },
-  [WorkshopKanbanStatus.EM_ANDAMENTO]: {
-    accent: 'var(--color-secondary)',
-    soft: 'var(--color-info-soft)',
-    softBorder: 'rgba(0, 101, 195, 0.16)',
-    countBg: 'rgba(0, 101, 195, 0.12)',
-    countText: 'var(--color-secondary)',
-    cardBorder: 'var(--color-secondary)',
-    tagBg: 'var(--color-secondary)',
-  },
-  [WorkshopKanbanStatus.LIBERADO]: {
-    accent: 'var(--color-success)',
-    soft: 'var(--color-success-soft)',
-    softBorder: 'rgba(31, 138, 98, 0.18)',
-    countBg: 'rgba(31, 138, 98, 0.12)',
-    countText: 'var(--color-success)',
-    cardBorder: 'var(--color-success)',
-    tagBg: 'var(--color-success)',
-  },
-};
-
-const createId = () => `KANBAN-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
-
-const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
-  user,
-  equipments,
-  items,
-  setItems,
-  setIsEditing,
-  addAuditLog,
-}) => {
+const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({ user, equipments, items, onCreateItem, onSaveItem, onRemoveItem }) => {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<WorkshopKanbanItem | null>(null);
   const [editDescription, setEditDescription] = useState('');
-  const [formData, setFormData] = useState<FormState>({
+  const [formData, setFormData] = useState({
     equipmentId: '',
     maintenanceType: WorkshopMaintenanceType.MECANICA,
     description: '',
   });
 
   const canManage = user.role === UserRole.ADMIN || user.role === UserRole.PCM;
-
-  const equipmentOptions = useMemo(
-    () => [...equipments].sort((a, b) => a.tag.localeCompare(b.tag)),
-    [equipments]
-  );
-
-  const selectedEquipment = equipmentOptions.find(
-    equipment => equipment.id === formData.equipmentId
-  );
-
+  const equipmentOptions = useMemo(() => [...equipments].sort((a, b) => a.tag.localeCompare(b.tag)), [equipments]);
   const itemsByStatus = useMemo(
     () =>
       STATUS_ORDER.reduce((acc, status) => {
@@ -123,8 +42,6 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
     [items]
   );
 
-  const totalItems = items.length;
-
   const resetForm = () => {
     setFormData({
       equipmentId: '',
@@ -132,205 +49,93 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
       description: '',
     });
     setIsFormOpen(false);
-    setIsEditing(false);
   };
 
-  const resolveEquipmentName = (item: WorkshopKanbanItem) => {
-    const equipment = equipments.find(current => current.id === item.equipmentId);
-    return equipment?.name || item.equipmentName;
-  };
-
-  const resolveEquipmentTag = (item: WorkshopKanbanItem) => {
-    const equipment = equipments.find(current => current.id === item.equipmentId);
-    return equipment?.tag || item.tag;
-  };
-
-  const updateItemStatus = (itemId: string, status: WorkshopKanbanStatus) => {
-    let movedItem: WorkshopKanbanItem | undefined;
-
-    setItems(prev =>
-      prev.map(item => {
-        if (item.id !== itemId || item.status === status) {
-          return item;
-        }
-
-        movedItem = {
-          ...item,
-          status,
-          updatedAt: new Date().toISOString(),
-        };
-
-        return movedItem;
-      })
-    );
-
-    if (movedItem) {
-      addAuditLog({
+  const updateItemStatus = async (item: WorkshopKanbanItem, nextStatus: WorkshopKanbanStatus) => {
+    if (item.status === nextStatus) return;
+    await onSaveItem(
+      { ...item, status: nextStatus, updatedAt: new Date().toISOString() },
+      {
         actionType: 'Status',
         entity: 'Kanban Oficina',
-        entityId: resolveEquipmentTag(movedItem),
-        summary: `Movimentou ${resolveEquipmentTag(movedItem)} para ${status} no Kanban da Oficina`,
-      });
-    }
+        entityId: item.tag,
+        summary: `Movimentou ${item.tag} para ${nextStatus} no Kanban da Oficina`,
+      }
+    );
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!selectedEquipment) {
-      return;
-    }
+    if (!formData.equipmentId) return;
 
-    const alreadyInKanban = items.some(item => item.equipmentId === selectedEquipment.id);
-    if (alreadyInKanban) {
-      window.alert('Este equipamento já está no Kanban da Oficina.');
-      return;
-    }
+    const alreadyInKanban = items.some(item => item.equipmentId === formData.equipmentId);
+    if (alreadyInKanban) return;
 
-    const now = new Date().toISOString();
-    const newItem: WorkshopKanbanItem = {
-      id: createId(),
-      equipmentId: selectedEquipment.id,
-      tag: selectedEquipment.tag,
-      equipmentName: selectedEquipment.name,
-      maintenanceType: formData.maintenanceType,
-      description: formData.description.trim(),
-      status: WorkshopKanbanStatus.PENDENTE,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    setItems(prev => [newItem, ...prev]);
-    addAuditLog({
-      actionType: 'Criação',
-      entity: 'Kanban Oficina',
-      entityId: selectedEquipment.tag,
-      summary: `Inseriu ${selectedEquipment.tag} no Kanban da Oficina como Pendente`,
-    });
+    await onCreateItem(
+      {
+        equipmentId: formData.equipmentId,
+        maintenanceType: formData.maintenanceType,
+        description: formData.description.trim(),
+        status: WorkshopKanbanStatus.PENDENTE,
+      },
+      formData.equipmentId
+    );
     resetForm();
   };
 
-  const handleRemove = async (item: WorkshopKanbanItem) => {
-    if (item.status !== WorkshopKanbanStatus.LIBERADO) {
+  const handleSaveDescription = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingItem) return;
+    const nextDescription = editDescription.trim();
+    if (!nextDescription || nextDescription === editingItem.description) {
+      setEditingItem(null);
       return;
     }
 
-    const previousItems = items;
-    setItems(prev => prev.filter(current => current.id !== item.id));
-
-    const deleteSucceeded = await deleteWorkshopKanbanItem(item.id);
-    if (!deleteSucceeded) {
-      setItems(previousItems);
-      window.alert('Não foi possível remover o equipamento do Kanban neste momento.');
-      return;
-    }
-
-    addAuditLog({
-      actionType: 'Exclusão',
-      entity: 'Kanban Oficina',
-      entityId: resolveEquipmentTag(item),
-      summary: `Removeu ${resolveEquipmentTag(item)} do Kanban da Oficina após liberação`,
-    });
+    await onSaveItem(
+      { ...editingItem, description: nextDescription, updatedAt: new Date().toISOString() },
+      {
+        actionType: 'Edição',
+        entity: 'Kanban Oficina',
+        entityId: editingItem.tag,
+        summary: `Atualizou a descrição do serviço do equipamento ${editingItem.tag} no Kanban da Oficina`,
+      }
+    );
+    setEditingItem(null);
   };
 
-  const moveItem = (item: WorkshopKanbanItem, direction: 'previous' | 'next') => {
+  const moveItem = async (item: WorkshopKanbanItem, direction: 'previous' | 'next') => {
     const currentIndex = STATUS_ORDER.indexOf(item.status);
     const targetIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
     const targetStatus = STATUS_ORDER[targetIndex];
-
-    if (!targetStatus) {
-      return;
-    }
-
-    updateItemStatus(item.id, targetStatus);
-  };
-
-  const openEditModal = (item: WorkshopKanbanItem) => {
-    setEditingItem(item);
-    setEditDescription(item.description);
-    setIsEditing(true);
-  };
-
-  const closeEditModal = () => {
-    setEditingItem(null);
-    setEditDescription('');
-    setIsEditing(false);
-  };
-
-  const handleSaveDescription = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!editingItem) return;
-
-    const nextDescription = editDescription.trim();
-    if (!nextDescription || nextDescription === editingItem.description) {
-      closeEditModal();
-      return;
-    }
-
-    setItems(prev =>
-      prev.map(item =>
-        item.id === editingItem.id
-          ? { ...item, description: nextDescription, updatedAt: new Date().toISOString() }
-          : item
-      )
-    );
-
-    addAuditLog({
-      actionType: 'Edição',
-      entity: 'Kanban Oficina',
-      entityId: resolveEquipmentTag(editingItem),
-      summary: `Atualizou a descrição do serviço do equipamento ${resolveEquipmentTag(editingItem)} no Kanban da Oficina`,
-    });
-
-    closeEditModal();
+    if (!targetStatus) return;
+    await updateItemStatus(item, targetStatus);
   };
 
   return (
     <div className="tecer-page space-y-6">
-      <section className="rounded-[24px] border border-gray-100 dark:border-gray-700 bg-white dark:bg-tecer-darkCard px-6 py-5">
+      <section className="rounded-[24px] border border-gray-100 bg-white px-6 py-5 dark:border-gray-700 dark:bg-tecer-darkCard">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="max-w-2xl">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-tecer-grayMed font-bold">
-              Oficina
-            </p>
-            <h2 className="mt-1 font-display text-2xl font-extrabold">Kanban da Oficina</h2>
-            <p className="mt-1 text-sm text-tecer-grayMed">
-              Visualização rápida do fluxo da oficina.
-            </p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-tecer-grayMed">Oficina</p>
+            <h2 className="mt-1 font-display text-2xl font-extrabold">Kanban da oficina</h2>
+            <p className="mt-1 text-sm text-tecer-grayMed">Visualização rápida do fluxo operacional da oficina.</p>
           </div>
-
           <div className="flex items-center gap-3 xl:min-w-[540px] xl:justify-end">
             <div className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-[18px] border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/40 px-4 py-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-tecer-grayMed font-bold">
-                  Total
-                </p>
-                <p className="mt-1 text-2xl font-display font-extrabold text-tecer-primary">
-                  {totalItems}
-                </p>
+              <div className="rounded-[18px] border border-gray-100 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/40">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-tecer-grayMed">Total</p>
+                <p className="mt-1 font-display text-2xl font-extrabold text-tecer-primary">{items.length}</p>
               </div>
               {STATUS_ORDER.map(status => (
-                <div
-                  key={status}
-                  className="rounded-[18px] border px-4 py-3 bg-white/88 dark:bg-gray-800/40"
-                  style={{ borderColor: STATUS_STYLES[status].softBorder }}
-                >
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-tecer-grayMed font-bold">
-                    {status}
-                  </p>
-                  <p className="mt-1 text-2xl font-display font-extrabold" style={{ color: STATUS_STYLES[status].accent }}>
-                    {itemsByStatus[status].length}
-                  </p>
+                <div key={status} className="rounded-[18px] border border-gray-100 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800/40">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-tecer-grayMed">{status}</p>
+                  <p className="mt-1 font-display text-2xl font-extrabold text-tecer-primary">{itemsByStatus[status].length}</p>
                 </div>
               ))}
             </div>
-
             <div className="shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsFormOpen(prev => !prev)}
-                className="flex h-14 w-14 items-center justify-center rounded-2xl bg-tecer-primary text-white shadow-lg shadow-tecer-primary/20"
-                title={isFormOpen ? 'Fechar formulário' : 'Adicionar equipamento'}
-              >
+              <button type="button" onClick={() => setIsFormOpen(prev => !prev)} className="flex h-14 w-14 items-center justify-center rounded-2xl bg-tecer-primary text-white shadow-lg shadow-tecer-primary/20">
                 {isFormOpen ? <X size={22} /> : <Plus size={24} />}
               </button>
             </div>
@@ -338,18 +143,14 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
         </div>
       </section>
 
-      <section className="rounded-[28px] border border-gray-100 dark:border-gray-700 bg-white/70 dark:bg-tecer-darkCard p-5 lg:p-6 shadow-md space-y-4">
+      <section className="space-y-4 rounded-[28px] border border-gray-100 bg-white/70 p-5 shadow-md dark:border-gray-700 dark:bg-tecer-darkCard lg:p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.22em] text-tecer-grayMed font-bold">
-              Painel operacional
-            </p>
-            <h3 className="mt-1 text-3xl font-display font-extrabold">Status dos equipamentos</h3>
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-tecer-grayMed">Painel operacional</p>
+            <h3 className="mt-1 font-display text-3xl font-extrabold">Status dos equipamentos</h3>
           </div>
           <p className="text-xs text-tecer-grayMed">
-            {canManage
-              ? 'Arraste os cards ou use os botões para mover o equipamento.'
-              : 'Consulta visual do fluxo da oficina.'}
+            {canManage ? 'Arraste os cards ou use os botões para mover o equipamento.' : 'Consulta visual do fluxo da oficina.'}
           </p>
         </div>
 
@@ -365,94 +166,72 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                 if (!canManage) return;
                 event.preventDefault();
                 const itemId = event.dataTransfer.getData('text/plain') || draggedItemId;
-                if (itemId) {
-                  updateItemStatus(itemId, status);
+                const item = items.find(current => current.id === itemId);
+                if (item) {
+                  void updateItemStatus(item, status);
                 }
                 setDraggedItemId(null);
               }}
-              className="rounded-[28px] border bg-white/88 dark:bg-tecer-darkCard p-4 lg:p-5 shadow-lg"
-              style={{ borderColor: 'rgba(180, 199, 221, 0.32)' }}
+              className="rounded-[28px] border border-gray-100 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-tecer-darkCard lg:p-5"
             >
-              <div
-                className="mb-4 rounded-[22px] border p-4"
-                style={{
-                  borderColor: STATUS_STYLES[status].softBorder,
-                  backgroundColor: STATUS_STYLES[status].soft,
-                }}
-              >
+              <div className="mb-4 rounded-[22px] border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/40">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <span className="h-4 w-4 rounded-full shadow-sm" style={{ backgroundColor: STATUS_STYLES[status].accent }} />
+                    <span className="h-4 w-4 rounded-full bg-tecer-primary shadow-sm" />
                     <div>
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-tecer-grayMed font-bold">
-                        Status
-                      </p>
-                      <h4 className="text-[2.1rem] leading-none font-display font-extrabold">{status}</h4>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-tecer-grayMed">Status</p>
+                      <h4 className="font-display text-[2.1rem] font-extrabold leading-none">{status}</h4>
                     </div>
                   </div>
-                  <span
-                    className="rounded-full px-3 py-1 text-[11px] font-bold uppercase"
-                    style={{
-                      backgroundColor: STATUS_STYLES[status].countBg,
-                      color: STATUS_STYLES[status].countText,
-                    }}
-                  >
+                  <span className="rounded-full bg-tecer-primary/10 px-3 py-1 text-[11px] font-bold uppercase text-tecer-primary">
                     {itemsByStatus[status].length}
                   </span>
                 </div>
               </div>
 
-              <div className="space-y-3 min-h-[420px]">
+              <div className="min-h-[420px] space-y-3">
                 {itemsByStatus[status].map(item => (
                   <article
                     key={item.id}
                     draggable={canManage}
                     onDragStart={event => {
-                      if (!canManage) return;
                       event.dataTransfer.setData('text/plain', item.id);
                       setDraggedItemId(item.id);
                     }}
                     onDragEnd={() => setDraggedItemId(null)}
-                    className="rounded-[22px] border border-gray-100 dark:border-gray-700 border-l-4 bg-white dark:bg-tecer-darkCard p-4 shadow-sm"
-                    style={{ borderLeftColor: STATUS_STYLES[status].cardBorder }}
+                    className="rounded-[22px] border border-gray-100 border-l-4 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-tecer-darkCard"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          {canManage && <GripVertical size={14} className="shrink-0 text-tecer-grayMed" />}
-                          <span
-                            className="inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.12em] shadow-sm text-white"
-                            style={{ backgroundColor: STATUS_STYLES[status].tagBg }}
-                          >
-                            {resolveEquipmentTag(item)}
+                          {canManage ? <GripVertical size={14} className="shrink-0 text-tecer-grayMed" /> : null}
+                          <span className="inline-flex items-center rounded-xl bg-tecer-primary px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.12em] text-white shadow-sm">
+                            {item.tag}
                           </span>
                         </div>
-                        <h5 className="mt-3 text-lg font-bold leading-tight text-tecer-grayDark">
-                          {resolveEquipmentName(item)}
-                        </h5>
+                        <h5 className="mt-3 text-lg font-bold leading-tight text-tecer-grayDark">{item.equipmentName}</h5>
                       </div>
-
                       <div className="flex items-center gap-1">
-                        {canManage && (
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(item)}
-                            className="rounded-full p-2 text-tecer-primary hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                            title="Editar descrição"
-                          >
+                        {canManage ? (
+                          <button onClick={() => { setEditingItem(item); setEditDescription(item.description); }} className="rounded-full p-2 text-tecer-primary hover:bg-blue-50 dark:hover:bg-blue-900/20">
                             <Edit3 size={17} />
                           </button>
-                        )}
-                        {status === WorkshopKanbanStatus.LIBERADO && canManage && (
+                        ) : null}
+                        {status === WorkshopKanbanStatus.LIBERADO && canManage ? (
                           <button
-                            type="button"
-                            onClick={() => void handleRemove(item)}
+                            onClick={() =>
+                              void onRemoveItem(item, {
+                                actionType: 'Exclusão',
+                                entity: 'Kanban Oficina',
+                                entityId: item.tag,
+                                summary: `Removeu ${item.tag} do Kanban da Oficina após liberação`,
+                              })
+                            }
                             className="rounded-full p-2 text-red-500 hover:bg-red-50"
-                            title="Remover do Kanban"
                           >
                             <Trash2 size={18} />
                           </button>
-                        )}
+                        ) : null}
                       </div>
                     </div>
 
@@ -460,246 +239,80 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({
                       <ClipboardList size={15} className="text-tecer-grayMed" />
                       <span>{item.maintenanceType}</span>
                     </div>
+                    <p className="mt-3 line-clamp-3 text-sm text-tecer-grayMed">{item.description}</p>
 
-                    <p className="mt-3 line-clamp-3 text-sm text-tecer-grayMed">
-                      {item.description}
-                    </p>
-
-                    {canManage && (
+                    {canManage ? (
                       <div className="mt-4 flex items-center justify-between gap-2 border-t border-gray-100 pt-4 dark:border-gray-700">
-                        <button
-                          type="button"
-                          disabled={status === WorkshopKanbanStatus.PENDENTE}
-                          onClick={() => moveItem(item, 'previous')}
-                          className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700"
-                        >
+                        <button type="button" disabled={status === WorkshopKanbanStatus.PENDENTE} onClick={() => void moveItem(item, 'previous')} className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700">
                           <ArrowLeft size={16} />
                           Voltar
                         </button>
-                        <button
-                          type="button"
-                          disabled={status === WorkshopKanbanStatus.LIBERADO}
-                          onClick={() => moveItem(item, 'next')}
-                          className="flex items-center gap-2 rounded-xl bg-tecer-primary px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
-                        >
+                        <button type="button" disabled={status === WorkshopKanbanStatus.LIBERADO} onClick={() => void moveItem(item, 'next')} className="flex items-center gap-2 rounded-xl bg-tecer-primary px-3 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
                           Avançar
                           <ArrowRight size={16} />
                         </button>
                       </div>
-                    )}
+                    ) : null}
                   </article>
                 ))}
 
-                {itemsByStatus[status].length === 0 && (
-                  <div
-                    className="flex min-h-[180px] flex-col items-center justify-center rounded-[22px] border border-dashed p-6 text-center"
-                    style={{
-                      borderColor: STATUS_STYLES[status].softBorder,
-                      backgroundColor: STATUS_STYLES[status].soft,
-                    }}
-                  >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white dark:bg-tecer-darkCard">
-                      <Wrench size={20} className="text-tecer-grayMed" />
-                    </div>
-                    <p className="mt-4 text-sm font-semibold text-tecer-grayDark">
-                      Nenhum equipamento neste status
-                    </p>
-                    <p className="mt-2 text-xs text-tecer-grayMed">
-                      {canManage
-                        ? 'Adicione um novo item ou mova um card para esta coluna.'
-                        : 'Aguardando atualização do quadro da oficina.'}
-                    </p>
-                  </div>
-                )}
+                {!itemsByStatus[status].length ? <EmptyState icon={Wrench} title="Nenhum equipamento neste status" description="Adicione um novo item ou mova um card para esta coluna." /> : null}
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {isFormOpen && (
-        <div className="tecer-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="w-full max-w-5xl rounded-[28px] border border-gray-100 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-tecer-darkCard">
-            <div className="mb-5 flex items-center justify-between gap-4 border-b border-gray-100 pb-4 dark:border-gray-700">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.22em] text-tecer-grayMed font-bold">
-                  Novo equipamento no fluxo
-                </p>
-                <h3 className="mt-1 text-2xl font-display font-extrabold">Adicionar item ao Kanban</h3>
-              </div>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 text-tecer-grayMed hover:text-tecer-primary dark:border-gray-700"
-                title="Fechar modal"
-              >
-                <X size={20} />
-              </button>
+      {isFormOpen ? (
+        <Modal title="Adicionar item ao Kanban" subtitle="Novo equipamento no fluxo" onClose={resetForm} className="max-w-5xl">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 p-6 xl:grid-cols-12">
+            <div className="xl:col-span-3">
+              <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">Tag</label>
+              <Select required disabled={!canManage} value={formData.equipmentId} onChange={event => setFormData(prev => ({ ...prev, equipmentId: event.target.value }))}>
+                <option value="">Selecionar</option>
+                {equipmentOptions.map(equipment => (
+                  <option key={equipment.id} value={equipment.id}>{equipment.tag}</option>
+                ))}
+              </Select>
             </div>
-
-            {!canManage && (
-              <div className="mb-4 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-tecer-grayMed dark:border-gray-700 dark:bg-gray-800/40">
-                Apenas Admin e PCM podem adicionar e movimentar cards.
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-              <div className="xl:col-span-3">
-                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">
-                  Tag <span className="text-red-500">*</span>
-                </label>
-                <select
-                  required
-                  disabled={!canManage}
-                  value={formData.equipmentId}
-                  onFocus={() => setIsEditing(true)}
-                  onBlur={() => setIsEditing(false)}
-                  onChange={event => setFormData(prev => ({ ...prev, equipmentId: event.target.value }))}
-                  className="w-full rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
-                >
-                  <option value="">Selecionar</option>
-                  {equipmentOptions.map(equipment => (
-                    <option key={equipment.id} value={equipment.id}>
-                      {equipment.tag}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="xl:col-span-4">
-                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">
-                  Nome do equipamento
-                </label>
-                <input
-                  type="text"
-                  readOnly
-                  value={selectedEquipment?.name || ''}
-                  placeholder="Preenchido automaticamente"
-                  className="w-full rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
-                />
-              </div>
-
-              <div className="xl:col-span-2">
-                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">
-                  Manutenção <span className="text-red-500">*</span>
-                </label>
-                <select
-                  required
-                  disabled={!canManage}
-                  value={formData.maintenanceType}
-                  onFocus={() => setIsEditing(true)}
-                  onBlur={() => setIsEditing(false)}
-                  onChange={event =>
-                    setFormData(prev => ({
-                      ...prev,
-                      maintenanceType: event.target.value as WorkshopMaintenanceType,
-                    }))
-                  }
-                  className="w-full rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
-                >
-                  {Object.values(WorkshopMaintenanceType).map(type => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="xl:col-span-3">
-                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">
-                  Descrição <span className="text-red-500">*</span>
-                </label>
-                <input
-                  required
-                  disabled={!canManage}
-                  type="text"
-                  value={formData.description}
-                  onFocus={() => setIsEditing(true)}
-                  onBlur={() => setIsEditing(false)}
-                  onChange={event => setFormData(prev => ({ ...prev, description: event.target.value }))}
-                  placeholder="Serviço a executar"
-                  className="w-full rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
-                />
-              </div>
-
-              <div className="xl:col-span-12 flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="rounded-2xl border border-gray-200 px-5 py-3 text-sm font-semibold dark:border-gray-700"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={!canManage}
-                  className="flex items-center justify-center gap-3 rounded-2xl bg-tecer-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-tecer-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Plus size={18} />
-                  Novo item
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {editingItem && (
-        <div className="tecer-modal-backdrop fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl rounded-[28px] border border-gray-100 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-tecer-darkCard">
-            <div className="mb-5 flex items-center justify-between gap-4 border-b border-gray-100 pb-4 dark:border-gray-700">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.22em] text-tecer-grayMed font-bold">
-                  Editar serviço
-                </p>
-                <h3 className="mt-1 text-2xl font-display font-extrabold">
-                  {resolveEquipmentTag(editingItem)} - {resolveEquipmentName(editingItem)}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={closeEditModal}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 text-tecer-grayMed hover:text-tecer-primary dark:border-gray-700"
-                title="Fechar modal"
-              >
-                <X size={20} />
-              </button>
+            <div className="xl:col-span-4">
+              <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">Nome do equipamento</label>
+              <input type="text" readOnly value={equipmentOptions.find(item => item.id === formData.equipmentId)?.name || ''} className="w-full rounded-xl bg-gray-50 p-3 dark:bg-gray-800" />
             </div>
+            <div className="xl:col-span-2">
+              <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">Manutenção</label>
+              <Select required disabled={!canManage} value={formData.maintenanceType} onChange={event => setFormData(prev => ({ ...prev, maintenanceType: event.target.value as WorkshopMaintenanceType }))}>
+                {Object.values(WorkshopMaintenanceType).map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </Select>
+            </div>
+            <div className="xl:col-span-3">
+              <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">Descrição</label>
+              <input required disabled={!canManage} type="text" value={formData.description} onChange={event => setFormData(prev => ({ ...prev, description: event.target.value }))} placeholder="Serviço a executar" className="w-full rounded-xl bg-gray-50 p-3 dark:bg-gray-800" />
+            </div>
+            <div className="xl:col-span-12 flex justify-end gap-3 pt-2">
+              <Button type="button" variant="secondary" onClick={resetForm}>Cancelar</Button>
+              <Button type="submit" disabled={!canManage}><Plus size={18} />Novo item</Button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
 
-            <form onSubmit={handleSaveDescription} className="space-y-5">
-              <div>
-                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">
-                  Descrição do serviço <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  required
-                  value={editDescription}
-                  onChange={event => setEditDescription(event.target.value)}
-                  className="min-h-32 w-full rounded-xl bg-gray-50 p-3 dark:bg-gray-800"
-                  placeholder="Descreva o serviço a executar"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={closeEditModal}
-                  className="rounded-2xl border border-gray-200 px-5 py-3 text-sm font-semibold dark:border-gray-700"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="flex items-center justify-center gap-2 rounded-2xl bg-tecer-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-tecer-primary/20"
-                >
-                  <Edit3 size={16} />
-                  Salvar descrição
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {editingItem ? (
+        <Modal title={`${editingItem.tag} - ${editingItem.equipmentName}`} subtitle="Editar serviço" onClose={() => setEditingItem(null)} className="max-w-2xl">
+          <form onSubmit={handleSaveDescription} className="space-y-5 p-6">
+            <div>
+              <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">Descrição do serviço</label>
+              <textarea required value={editDescription} onChange={event => setEditDescription(event.target.value)} className="min-h-32 w-full rounded-xl bg-gray-50 p-3 dark:bg-gray-800" placeholder="Descreva o serviço a executar" />
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="secondary" onClick={() => setEditingItem(null)}>Cancelar</Button>
+              <Button type="submit"><Edit3 size={16} />Salvar descrição</Button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
     </div>
   );
 };

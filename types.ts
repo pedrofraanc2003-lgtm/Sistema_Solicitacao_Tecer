@@ -150,4 +150,12 @@ export interface AuditLog {
   summary: string;
 }
 
+export interface Notification {
+  id: string;
+  message: string;
+  timestamp: string;
+  requestId: string;
+  read: boolean;
+}
+
 

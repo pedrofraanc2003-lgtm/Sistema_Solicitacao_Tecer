@@ -20,8 +20,15 @@
     "constants.tsx",
     "types.ts",
     "vite.config.ts",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "domains/**/*.ts",
+    "domains/**/*.tsx",
     "pages/**/*.tsx",
     "services/**/*.ts",
+    "ui/**/*.ts",
+    "ui/**/*.tsx",
+    "lib/**/*.ts",
     "vite-env.d.ts"
   ]
 }

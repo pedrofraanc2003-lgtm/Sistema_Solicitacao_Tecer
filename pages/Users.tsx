@@ -1,20 +1,32 @@
 import React, { useState } from 'react';
-import { Plus, Search, User as UserIcon, Edit, Shield, XCircle, Mail, AlertTriangle, Key } from 'lucide-react';
-import { User, UserRole, UserStatus, AuditLog } from '../types';
-import { manageSupabaseUser } from '../services/supabase';
+import { AlertTriangle, Edit, Key, Mail, Plus, Search, Shield, User as UserIcon, XCircle } from 'lucide-react';
+import { AuditLog, User, UserRole, UserStatus } from '../types';
+import Badge from '../ui/Badge';
+import Button from '../ui/Button';
+import Input from '../ui/Input';
+import Modal from '../ui/Modal';
+import Select from '../ui/Select';
+import Toolbar from '../ui/Toolbar';
 
 interface UsersProps {
   users: User[];
-  setUsers: React.Dispatch<React.SetStateAction<User[]>>;
-  setIsEditing: (editing: boolean) => void;
-  addAuditLog: (logData: Omit<AuditLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'userRole'>) => void;
+  onSaveUser: (input: {
+    id?: string;
+    name: string;
+    email: string;
+    username: string;
+    role: User['role'];
+    status: User['status'];
+    password?: string;
+  }) => Promise<User>;
+  onAudit: (input: Omit<AuditLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'userRole'>) => Promise<void>;
 }
 
-const Users: React.FC<UsersProps> = ({ users, setUsers, setIsEditing, addAuditLog }) => {
+const Users: React.FC<UsersProps> = ({ users, onSaveUser, onAudit }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [editingUser, setEditingUser] = useState<User | null>(null);
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<Partial<User>>({
     name: '',
     email: '',
@@ -23,20 +35,29 @@ const Users: React.FC<UsersProps> = ({ users, setUsers, setIsEditing, addAuditLo
     status: UserStatus.ATIVO,
     password: '',
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const filteredUsers = users.filter(
-    (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      (u.email || '').toLowerCase().includes(search.toLowerCase()) ||
-      u.username.toLowerCase().includes(search.toLowerCase()) ||
-      u.role.toLowerCase().includes(search.toLowerCase())
+  const filteredUsers = users.filter(user =>
+    [user.name, user.email || '', user.username, user.role].some(value => value.toLowerCase().includes(search.toLowerCase()))
   );
-  const activeUsers = users.filter((u) => u.status === UserStatus.ATIVO).length;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const normalizedPayload = {
+  const activeUsers = users.filter(user => user.status === UserStatus.ATIVO).length;
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingUser(null);
+    setFormData({
+      name: '',
+      email: '',
+      username: '',
+      role: UserRole.LIDERANCA,
+      status: UserStatus.ATIVO,
+      password: '',
+    });
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const payload = {
       id: editingUser?.id,
       name: String(formData.name || '').trim(),
       email: String(formData.email || '').trim().toLowerCase(),
@@ -46,93 +67,44 @@ const Users: React.FC<UsersProps> = ({ users, setUsers, setIsEditing, addAuditLo
       password: String(formData.password || '').trim() || undefined,
     };
 
-    if (!normalizedPayload.name || !normalizedPayload.email || !normalizedPayload.username) {
-      alert('Preencha nome, e-mail e login.');
+    if (!payload.name || !payload.email || !payload.username) {
       return;
     }
 
-    if (!editingUser && !normalizedPayload.password) {
-      alert('Informe uma senha inicial para o novo usuário.');
+    if (!editingUser && !payload.password) {
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const managedUser = await manageSupabaseUser(editingUser ? 'update' : 'create', normalizedPayload);
-
-      if (editingUser) {
-        setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? managedUser : u)));
-      } else {
-        setUsers((prev) => [...prev, managedUser]);
-      }
-
-      if (editingUser) {
-        addAuditLog({
-          actionType: 'Edição',
-          entity: 'Usuário',
-          entityId: editingUser.username,
-          summary: `Alterou perfil/dados do usuário ${editingUser.username}`,
-        });
-      } else {
-        addAuditLog({
-          actionType: 'Criação',
-          entity: 'Usuário',
-          entityId: managedUser.username,
-          summary: `Cadastrou novo perfil no sistema: ${managedUser.name}`,
-        });
-      }
-
+      const savedUser = await onSaveUser(payload);
+      await onAudit({
+        actionType: editingUser ? 'Edição' : 'Criação',
+        entity: 'Usuário',
+        entityId: editingUser?.username || savedUser.username,
+        summary: editingUser
+          ? `Alterou perfil/dados do usuário ${editingUser.username}`
+          : `Cadastrou novo perfil no sistema: ${savedUser.name}`,
+      });
       closeModal();
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'Falha ao administrar usuário no Supabase.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingUser(null);
-    setIsEditing(false);
-    setFormData({ name: '', email: '', username: '', role: UserRole.LIDERANCA, status: UserStatus.ATIVO, password: '' });
-  };
-
-  const handleEdit = (user: User) => {
-    setEditingUser(user);
-    setFormData({ ...user, password: '' });
-    setIsModalOpen(true);
-    setIsEditing(true);
-  };
-
-  const getRoleBadge = (role: UserRole) => {
-    const styles: Record<UserRole, string> = {
-      [UserRole.ADMIN]: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-      [UserRole.PCM]: 'bg-tecer-primary text-white',
-      [UserRole.LIDERANCA]: 'bg-tecer-secondary text-white',
-      [UserRole.COMPRAS]: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-    };
-    return <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${styles[role]}`}>{role}</span>;
-  };
-
   return (
     <div className="tecer-page space-y-6">
       <div className="tecer-view-header">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div className="tecer-view-headline">
             <p className="tecer-view-kicker">Administração</p>
-            <h2 className="font-display text-3xl font-extrabold text-tecer-grayDark dark:text-white">Gestão de Usuários</h2>
-            <p className="text-tecer-grayMed text-sm">Controle de perfis, acessos e situação operacional dos usuários do sistema.</p>
+            <h2 className="font-display text-3xl font-extrabold text-tecer-grayDark dark:text-white">Gestão de usuários</h2>
+            <p className="text-sm text-tecer-grayMed">Controle de perfis, acessos e situação operacional dos usuários do sistema.</p>
           </div>
-          <button
-            onClick={() => {
-              setIsModalOpen(true);
-              setIsEditing(true);
-            }}
-            className="flex items-center justify-center gap-2 bg-tecer-primary hover:bg-[#1a2e5e] text-white px-6 py-3 rounded-xl shadow-md transition-all font-semibold"
-          >
+          <Button onClick={() => setIsModalOpen(true)}>
             <Plus size={20} />
-            Cadastrar Perfil
-          </button>
+            Cadastrar perfil
+          </Button>
         </div>
         <div className="tecer-view-summary">
           <div className="tecer-view-stat">
@@ -157,24 +129,18 @@ const Users: React.FC<UsersProps> = ({ users, setUsers, setIsEditing, addAuditLo
         </div>
       </div>
 
-      <div className="tecer-toolbar bg-white dark:bg-tecer-darkCard p-4 rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap gap-4 items-center">
-        <div className="flex-1 min-w-[240px] relative">
+      <Toolbar>
+        <div className="relative min-w-[240px] flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-tecer-grayMed" size={18} />
-          <input
-            type="text"
-            placeholder="Pesquisar por nome, e-mail, login ou função..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-tecer-primary text-tecer-grayDark dark:text-white"
-          />
+          <Input value={search} onChange={event => setSearch(event.target.value)} placeholder="Pesquisar por nome, e-mail, login ou função..." className="pl-10" />
         </div>
-      </div>
+      </Toolbar>
 
-      <div className="bg-white dark:bg-tecer-darkCard rounded-[24px] shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden">
+      <div className="overflow-hidden rounded-[24px] border border-gray-100 bg-white shadow-md dark:border-gray-700 dark:bg-tecer-darkCard">
         <div className="overflow-x-auto">
           <table className="tecer-table w-full text-left">
             <thead>
-              <tr className="bg-gray-50 dark:bg-gray-800/50 text-tecer-grayMed text-[10px] uppercase font-bold border-b border-gray-100 dark:border-gray-700">
+              <tr className="border-b border-gray-100 bg-gray-50 text-[10px] font-bold uppercase text-tecer-grayMed dark:border-gray-700 dark:bg-gray-800/50">
                 <th className="px-6 py-4">Usuário</th>
                 <th className="px-6 py-4">E-mail</th>
                 <th className="px-6 py-4">Login</th>
@@ -183,32 +149,36 @@ const Users: React.FC<UsersProps> = ({ users, setUsers, setIsEditing, addAuditLo
                 <th className="px-6 py-4 text-center">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-tecer-grayDark dark:text-gray-300">
-              {filteredUsers.map((u) => (
-                <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+            <tbody className="divide-y divide-gray-100 text-tecer-grayDark dark:divide-gray-700 dark:text-gray-300">
+              {filteredUsers.map(user => (
+                <tr key={user.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-tecer-primary/10 text-tecer-primary flex items-center justify-center font-bold">
-                        {u.name.charAt(0)}
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-tecer-primary/10 font-bold text-tecer-primary">
+                        {user.name.charAt(0)}
                       </div>
-                      <span className="text-sm font-semibold text-tecer-grayDark dark:text-gray-200">{u.name}</span>
+                      <span className="text-sm font-semibold">{user.name}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm font-medium text-tecer-grayMed">{u.email || 'N/D'}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-tecer-grayMed">{u.username}</td>
-                  <td className="px-6 py-4">{getRoleBadge(u.role)}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-tecer-grayMed">{user.email || 'N/D'}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-tecer-grayMed">{user.username}</td>
                   <td className="px-6 py-4">
-                    <span className={`flex items-center gap-1 text-[10px] font-bold uppercase ${u.status === UserStatus.ATIVO ? 'text-green-500' : 'text-red-500'}`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${u.status === UserStatus.ATIVO ? 'bg-green-500' : 'bg-red-500'}`} />
-                      {u.status}
-                    </span>
+                    <Badge tone={user.role === UserRole.ADMIN ? 'info' : user.role === UserRole.COMPRAS ? 'warning' : 'default'}>{user.role}</Badge>
+                  </td>
+                  <td className="px-6 py-4">
+                    <Badge tone={user.status === UserStatus.ATIVO ? 'success' : 'danger'}>{user.status}</Badge>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <button onClick={() => handleEdit(u)} className="p-2 hover:bg-tecer-bgLight dark:hover:bg-gray-700 rounded-full text-tecer-primary transition-colors">
-                        <Edit size={18} />
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => {
+                        setEditingUser(user);
+                        setFormData({ ...user, password: '' });
+                        setIsModalOpen(true);
+                      }}
+                      className="rounded-full p-2 text-tecer-primary transition-colors hover:bg-tecer-bgLight dark:hover:bg-gray-700"
+                    >
+                      <Edit size={18} />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -217,114 +187,68 @@ const Users: React.FC<UsersProps> = ({ users, setUsers, setIsEditing, addAuditLo
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="tecer-modal-backdrop fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-tecer-darkCard w-full max-w-md rounded-[28px] shadow-2xl animate-in slide-in-from-bottom duration-300">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-tecer-grayDark dark:text-white">{editingUser ? 'Editar Perfil' : 'Novo Perfil'}</h3>
-              <button onClick={closeModal} className="text-tecer-grayMed hover:text-red-500 transition-colors">
-                <XCircle size={24} />
-              </button>
+      {isModalOpen ? (
+        <Modal title={editingUser ? 'Editar perfil' : 'Novo perfil'} onClose={closeModal} className="max-w-md">
+          <form onSubmit={handleSubmit} className="space-y-6 p-8">
+            <div>
+              <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">Nome completo</label>
+              <div className="relative">
+                <UserIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-tecer-grayMed" />
+                <Input required value={formData.name || ''} onChange={event => setFormData(prev => ({ ...prev, name: event.target.value }))} placeholder="Ex: João da Silva" className="pl-10" />
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-8 space-y-6">
-              <div>
-                <label className="block text-xs font-bold uppercase text-tecer-grayMed mb-2">Nome Completo</label>
-                <div className="relative">
-                  <UserIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-tecer-grayMed" />
-                  <input
-                    required
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ex: João da Silva"
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-tecer-primary text-tecer-grayDark dark:text-white"
-                  />
-                </div>
+            <div>
+              <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">E-mail</label>
+              <div className="relative">
+                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-tecer-grayMed" />
+                <Input required type="email" value={formData.email || ''} onChange={event => setFormData(prev => ({ ...prev, email: event.target.value.toLowerCase().trim() }))} placeholder="usuario@empresa.com" className="pl-10" />
               </div>
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-tecer-grayMed mb-2">E-mail</label>
-                <div className="relative">
-                  <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-tecer-grayMed" />
-                  <input
-                    required
-                    type="email"
-                    value={formData.email || ''}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value.toLowerCase().trim() })}
-                    placeholder="usuario@empresa.com"
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-tecer-primary text-tecer-grayDark dark:text-white"
-                  />
-                </div>
+                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">Login</label>
+                <Input required value={formData.username || ''} onChange={event => setFormData(prev => ({ ...prev, username: event.target.value.toLowerCase().trim() }))} placeholder="joao.silva" />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-tecer-grayMed mb-2">Login</label>
-                  <input
-                    required
-                    type="text"
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().trim() })}
-                    placeholder="joao.silva"
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-lg focus:ring-2 focus:ring-tecer-primary text-tecer-grayDark dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold uppercase text-tecer-grayMed mb-2">Função</label>
-                  <select
-                    required
-                    value={formData.role}
-                    onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-lg focus:ring-2 focus:ring-tecer-primary text-tecer-grayDark dark:text-white"
-                  >
-                    {Object.values(UserRole).map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
               <div>
-                <label className="block text-xs font-bold uppercase text-tecer-grayMed mb-2">
-                  {editingUser ? 'Nova Senha' : 'Senha Inicial'}
-                </label>
+                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">Função</label>
+                <Select required value={formData.role} onChange={event => setFormData(prev => ({ ...prev, role: event.target.value as UserRole }))}>
+                  {Object.values(UserRole).map(role => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">Status</label>
+                <Select required value={formData.status} onChange={event => setFormData(prev => ({ ...prev, status: event.target.value as UserStatus }))}>
+                  {Object.values(UserStatus).map(status => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">{editingUser ? 'Nova senha' : 'Senha inicial'}</label>
                 <div className="relative">
                   <Key size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-tecer-grayMed" />
-                  <input
-                    required={!editingUser}
-                    type="password"
-                    value={formData.password || ''}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder={editingUser ? 'Opcional para redefinir senha' : 'Minimo de 8 caracteres'}
-                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-tecer-primary text-tecer-grayDark dark:text-white"
-                  />
+                  <Input required={!editingUser} type="password" value={formData.password || ''} onChange={event => setFormData(prev => ({ ...prev, password: event.target.value }))} placeholder={editingUser ? 'Opcional para redefinir senha' : 'Mínimo de 8 caracteres'} className="pl-10" />
                 </div>
               </div>
+            </div>
 
-              <div className="flex items-center gap-4 pt-4">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 px-6 py-3 rounded-lg border border-gray-200 dark:border-gray-700 font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-tecer-grayDark dark:text-white"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 px-6 py-3 rounded-lg bg-tecer-primary hover:bg-[#1a2e5e] text-white font-bold shadow-lg shadow-tecer-primary/20 transition-all flex items-center justify-center gap-2"
-                >
-                  <Shield size={18} />
-                  {isSubmitting ? 'Salvando...' : editingUser ? 'Salvar Perfil' : 'Criar Perfil'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <div className="flex items-center gap-4 pt-4">
+              <Button type="button" variant="secondary" onClick={closeModal} className="flex-1">Cancelar</Button>
+              <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                <Shield size={18} />
+                {isSubmitting ? 'Salvando...' : editingUser ? 'Salvar perfil' : 'Criar perfil'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
     </div>
   );
 };
