@@ -12,10 +12,10 @@ import {
 } from '../types';
 
 export const MOCK_USERS: User[] = [
-  { id: '1', name: 'Admin Tecer', email: 'admin@tecer.com', username: 'admin', role: UserRole.ADMIN, status: UserStatus.ATIVO, password: 'admin' },
-  { id: '2', name: 'Joao PCM', email: 'joao.pcm@tecer.com', username: 'joao.pcm', role: UserRole.PCM, status: UserStatus.ATIVO, password: 'pcm' },
-  { id: '3', name: 'Maria Lider', email: 'maria.lider@tecer.com', username: 'maria.lider', role: UserRole.LIDERANCA, status: UserStatus.ATIVO, password: 'lider' },
-  { id: '4', name: 'Carlos Compras', email: 'carlos.compras@tecer.com', username: 'carlos.compras', role: UserRole.COMPRAS, status: UserStatus.ATIVO, password: 'compras' },
+  { id: '1', name: 'Admin Tecer', email: 'admin@tecer.com', username: 'admin', role: UserRole.ADMIN, status: UserStatus.ATIVO },
+  { id: '2', name: 'Joao PCM', email: 'joao.pcm@tecer.com', username: 'joao.pcm', role: UserRole.PCM, status: UserStatus.ATIVO },
+  { id: '3', name: 'Maria Lider', email: 'maria.lider@tecer.com', username: 'maria.lider', role: UserRole.LIDERANCA, status: UserStatus.ATIVO },
+  { id: '4', name: 'Carlos Compras', email: 'carlos.compras@tecer.com', username: 'carlos.compras', role: UserRole.COMPRAS, status: UserStatus.ATIVO },
 ];
 
 export const MOCK_EQUIPMENTS: Equipment[] = [

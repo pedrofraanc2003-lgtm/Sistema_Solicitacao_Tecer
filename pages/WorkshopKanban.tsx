@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, ClipboardList, Edit3, GripVertical, Plus, Trash2, Wrench, X } from 'lucide-react';
+import { useAuth, useEquipmentsData, useWorkshopData } from '../app/hooks';
 import { AuditLog, Equipment, User, UserRole, WorkshopKanbanItem, WorkshopKanbanStatus, WorkshopMaintenanceType } from '../types';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
@@ -20,7 +21,7 @@ interface WorkshopKanbanProps {
 
 const STATUS_ORDER = [WorkshopKanbanStatus.PENDENTE, WorkshopKanbanStatus.EM_ANDAMENTO, WorkshopKanbanStatus.LIBERADO];
 
-const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({ user, equipments, items, onCreateItem, onSaveItem, onRemoveItem }) => {
+const WorkshopKanbanView: React.FC<WorkshopKanbanProps> = ({ user, equipments, items, onCreateItem, onSaveItem, onRemoveItem }) => {
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<WorkshopKanbanItem | null>(null);
@@ -317,4 +318,23 @@ const WorkshopKanban: React.FC<WorkshopKanbanProps> = ({ user, equipments, items
   );
 };
 
-export default WorkshopKanban;
+export default function WorkshopKanban() {
+  const { user } = useAuth();
+  const { equipments } = useEquipmentsData();
+  const { workshopItems, createWorkshopCardAction, saveWorkshopItemAction, removeWorkshopItemAction } = useWorkshopData();
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <WorkshopKanbanView
+      user={user}
+      equipments={equipments}
+      items={workshopItems}
+      onCreateItem={createWorkshopCardAction}
+      onSaveItem={saveWorkshopItemAction}
+      onRemoveItem={removeWorkshopItemAction}
+    />
+  );
+}

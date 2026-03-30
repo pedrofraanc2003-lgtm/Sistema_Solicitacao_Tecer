@@ -1,130 +1,49 @@
-﻿
-import React from 'react';
-import { 
-  FileSpreadsheet, 
-  Download, 
-  Package, 
-  Wrench, 
-  ClipboardList,
-  Database,
-  ArrowRight,
-  // Fix: Added missing icon imports
-  Clock,
-  ShieldAlert
-} from 'lucide-react';
-import { MaintenanceRequest, Equipment } from '../types';
+import React, { useMemo } from 'react';
+import { Clock, Database, Download, Package, ShieldAlert, Wrench, ClipboardList } from 'lucide-react';
+import { useEquipmentsData, useRequestsData } from '../app/hooks';
+import { buildEquipmentsExport, buildInsumosExport, buildRequestsExport, downloadDataset } from '../services/exports/reportExports';
+import Panel from '../ui/Panel';
+import Button from '../ui/Button';
+import { buildEquipmentMap, enrichRequests } from '../domains/requests/selectors';
 
-interface ReportsProps {
-  requests: MaintenanceRequest[];
-  equipments: Equipment[];
-}
-
-const Reports: React.FC<ReportsProps> = ({ requests, equipments }) => {
-
-  const downloadCSV = (filename: string, csvContent: string) => {
-    // Adiciona o BOM (\ufeff) para que o Excel identifique UTF-8 corretamente
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const exportRequests = () => {
-    const headers = [
-      "ID_Solicitacao", "Tipo", "Classificacao", "Equipamento_TAG", 
-      "Equipamento_Nome", "Descricao", "Urgencia", "Impacto", 
-      "Status", "Data_Criacao", "Prazo_Entrega"
-    ];
-
-    const rows = requests.map(req => {
-      const eq = equipments.find(e => e.id === req.equipmentId);
-      return [
-        req.id,
-        req.type,
-        req.classification || "N/A",
-        eq?.tag || "N/A",
-        eq?.name || "N/A",
-        `"${req.description.replace(/"/g, '""')}"`,
-        req.urgency,
-        req.impact,
-        req.status,
-        new Date(req.createdAt).toLocaleString(),
-        req.deadline ? new Date(req.deadline).toLocaleDateString() : "PRAZO NÃO DEFINIDO"
-      ];
-    });
-
-    const csvContent = [headers, ...rows].map(e => e.join(";")).join("\n");
-    downloadCSV("Relatório_Solicitacoes_BI.csv", csvContent);
-  };
-
-  const exportInsumos = () => {
-    const headers = ["ID_Solicitacao", "Descricao_Insumo", "Quantidade", "Unidade"];
-    const rows: any[] = [];
-
-    requests.forEach(req => {
-      req.insumos.forEach(insumo => {
-        rows.push([
-          req.id,
-          `"${insumo.description.replace(/"/g, '""')}"`,
-          insumo.quantity,
-          insumo.unit
-        ]);
-      });
-    });
-
-    const csvContent = [headers, ...rows].map(e => e.join(";")).join("\n");
-    downloadCSV("Relatório_Insumos_BI.csv", csvContent);
-  };
-
-  const exportEquipments = () => {
-    const headers = ["TAG", "Nome_Equipamento", "Tipo_Equipamento", "Status_Ativo"];
-    const rows = equipments.map(eq => [
-      eq.tag,
-      `"${eq.name.replace(/"/g, '""')}"`,
-      eq.type,
-      eq.status
-    ]);
-
-    const csvContent = [headers, ...rows].map(e => e.join(";")).join("\n");
-    downloadCSV("Relatório_Equipamentos_BI.csv", csvContent);
-  };
-
-  const ReportCard = ({ title, description, icon: Icon, onExport, colorClass }: any) => (
-    <div className="bg-white dark:bg-tecer-darkCard p-8 rounded-[28px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center group hover:shadow-xl transition-all hover:-translate-y-1">
-      <div className={`p-5 rounded-2xl ${colorClass} text-white mb-6 group-hover:scale-110 transition-transform`}>
-        <Icon size={32} />
-      </div>
-      <h3 className="font-display text-xl font-extrabold text-tecer-grayDark dark:text-white mb-3 uppercase tracking-tight">{title}</h3>
-      <p className="text-sm text-tecer-grayMed mb-8 leading-relaxed max-w-xs">{description}</p>
-      <button 
-        onClick={onExport}
-        className="mt-auto w-full flex items-center justify-center gap-3 bg-tecer-primary hover:bg-[#1a2e5e] text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-tecer-primary/20"
-      >
-        <Download size={20} />
-        Exportar para Excel (BI)
-      </button>
+const ReportCard = ({ title, description, countLabel, countValue, onExport }: { title: string; description: string; countLabel: string; countValue: number; onExport: () => void }) => (
+  <Panel className="flex flex-col items-start gap-5">
+    <div className="rounded-2xl bg-tecer-primary p-4 text-white shadow-lg shadow-tecer-primary/20">
+      <Download size={24} />
     </div>
-  );
+    <div>
+      <h3 className="font-display text-xl font-extrabold">{title}</h3>
+      <p className="mt-2 text-sm text-tecer-grayMed">{description}</p>
+    </div>
+    <div className="rounded-2xl bg-gray-50 px-4 py-3 text-sm dark:bg-gray-800/40">
+      <span className="font-bold text-tecer-primary">{countValue}</span> {countLabel}
+    </div>
+    <Button onClick={onExport}>Exportar CSV</Button>
+  </Panel>
+);
+
+export default function Reports() {
+  const { requests } = useRequestsData();
+  const { equipments } = useEquipmentsData();
+  const enrichedRequests = useMemo(() => enrichRequests(requests, buildEquipmentMap(equipments)), [equipments, requests]);
+  const lastExtraction = useMemo(() => new Date().toLocaleString('pt-BR'), []);
+  const insumosCount = useMemo(() => requests.reduce((sum, request) => sum + request.insumos.length, 0), [requests]);
 
   return (
-    <div className="tecer-page space-y-10 max-w-7xl mx-auto animate-in fade-in duration-500">
+    <div className="tecer-page mx-auto max-w-7xl space-y-10">
       <div className="tecer-view-header">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div className="tecer-view-headline">
-            <div className="flex items-center gap-3 text-tecer-primary dark:text-tecer-secondary font-bold uppercase tracking-widest text-xs">
-              <Database size={16} /> Exportação Estruturada
+            <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-tecer-primary">
+              <Database size={16} />
+              Exportação estruturada
             </div>
             <h2 className="font-display text-4xl font-extrabold text-tecer-grayDark dark:text-white">Relatórios para BI</h2>
-            <p className="text-tecer-grayMed text-sm">Dados formatados para importação direta no Microsoft Power BI Desktop ou Web.</p>
+            <p className="text-sm text-tecer-grayMed">Datasets isolados por domínio, com nomenclatura estável e carimbo temporal para ingestão analítica.</p>
           </div>
-          <div className="flex items-center gap-2 text-xs font-bold text-tecer-grayMed px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full">
+          <div className="flex items-center gap-2 rounded-full bg-gray-100 px-4 py-2 text-xs font-bold text-tecer-grayMed dark:bg-gray-800">
             <Clock size={14} />
-            Última extração em tempo real
+            Última extração preparada em {lastExtraction}
           </div>
         </div>
         <div className="tecer-view-summary">
@@ -133,59 +52,60 @@ const Reports: React.FC<ReportsProps> = ({ requests, equipments }) => {
             <span className="tecer-view-stat-value">{requests.length}</span>
           </div>
           <div className="tecer-view-stat">
+            <span className="tecer-view-stat-label">Insumos</span>
+            <span className="tecer-view-stat-value">{insumosCount}</span>
+          </div>
+          <div className="tecer-view-stat">
             <span className="tecer-view-stat-label">Equipamentos</span>
             <span className="tecer-view-stat-value">{equipments.length}</span>
           </div>
-          <div className="tecer-view-stat">
-            <span className="tecer-view-stat-label">Exports</span>
-            <span className="tecer-view-stat-value">3</span>
-          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <ReportCard 
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
+        <ReportCard
           title="Base de Solicitações"
-          description="Contém todas as solicitações, tipos, urgências e status. Ideal para análise de MTTR e Lead Time."
-          icon={ClipboardList}
-          onExport={exportRequests}
-          colorClass="bg-tecer-primary"
+          description="Histórico completo para acompanhar volume, lead time e situação operacional."
+          countLabel="linhas previstas"
+          countValue={requests.length}
+          onExport={() => downloadDataset(buildRequestsExport(enrichedRequests))}
         />
-        <ReportCard 
+        <ReportCard
           title="Consumo de Insumos"
-          description="Detalhamento item a item de todos os materiais vinculados. Utilize para análise de custos e estoque."
-          icon={Package}
-          onExport={exportInsumos}
-          colorClass="bg-tecer-secondary"
+          description="Detalhamento granular de materiais por solicitação para análises de abastecimento e custo."
+          countLabel="linhas previstas"
+          countValue={insumosCount}
+          onExport={() => downloadDataset(buildInsumosExport(requests))}
         />
-        <ReportCard 
+        <ReportCard
           title="Base de Equipamentos"
-          description="Lista técnica de ativos e TAGs operacionais para correlação de manutenções por equipamento."
-          icon={Wrench}
-          onExport={exportEquipments}
-          colorClass="bg-blue-500"
+          description="Inventário operacional de ativos com TAG, categoria e status de uso."
+          countLabel="linhas previstas"
+          countValue={equipments.length}
+          onExport={() => downloadDataset(buildEquipmentsExport(equipments))}
         />
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-900/10 p-8 rounded-[28px] border border-blue-100 dark:border-blue-900/30">
-        <h4 className="font-bold text-tecer-primary dark:text-tecer-secondary flex items-center gap-3 mb-4 uppercase text-sm tracking-wider">
-          {/* Fix: Added ShieldAlert component usage correctly */}
-          <ShieldAlert size={20} /> Nota para Especialistas de BI
+      <Panel tone="muted" className="space-y-5">
+        <h4 className="flex items-center gap-3 text-sm font-bold uppercase tracking-wider text-tecer-primary">
+          <ShieldAlert size={20} />
+          Guia de consumo
         </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-xs text-tecer-grayDark dark:text-gray-300 leading-relaxed">
+        <div className="grid grid-cols-1 gap-6 text-sm text-tecer-grayDark dark:text-gray-300 md:grid-cols-3">
           <div className="flex gap-3">
-            <div className="w-6 h-6 bg-tecer-primary text-white rounded-full flex items-center justify-center shrink-0 font-bold">1</div>
-            <p>Os arquivos são exportados com o separador **ponto e vírgula (;)** e codificação **UTF-8 with BOM**. No Power BI, utilize o conector "Texto/CSV".</p>
+            <ClipboardList size={18} className="mt-0.5 text-tecer-primary" />
+            <p>Os arquivos saem em `;` com BOM UTF-8, prontos para o conector de texto/CSV do Power BI.</p>
           </div>
           <div className="flex gap-3">
-            <div className="w-6 h-6 bg-tecer-primary text-white rounded-full flex items-center justify-center shrink-0 font-bold">2</div>
-            <p>Para relacionar insumos às solicitações, utilize a coluna **ID_Solicitacao** como chave estrangeira entre as duas tabelas.</p>
+            <Package size={18} className="mt-0.5 text-tecer-primary" />
+            <p>O relacionamento entre insumos e solicitações usa `ID_Solicitacao` como chave lógica.</p>
+          </div>
+          <div className="flex gap-3">
+            <Wrench size={18} className="mt-0.5 text-tecer-primary" />
+            <p>Os nomes de arquivo incluem timestamp de extração para rastreabilidade analítica.</p>
           </div>
         </div>
-      </div>
+      </Panel>
     </div>
   );
-};
-
-export default Reports;
-
+}

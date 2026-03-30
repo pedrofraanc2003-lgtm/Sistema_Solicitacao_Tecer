@@ -8,10 +8,6 @@ drop policy if exists "Allow all anon access equipments" on public.equipments;
 drop policy if exists "Allow all for anon" on public.equipments;
 drop policy if exists "pcm_access" on public.equipments;
 
-drop policy if exists "Acesso livre para testes" on public.notifications;
-drop policy if exists "Allow All" on public.notifications;
-drop policy if exists "Allow all for anon" on public.notifications;
-
 drop policy if exists "Allow all anon access requests" on public.requests;
 drop policy if exists "Allow all for anon" on public.requests;
 
@@ -29,8 +25,6 @@ drop policy if exists "Allow anon reads from anexos" on storage.objects;
 drop policy if exists "Allow anon upload private anexos objects" on storage.objects;
 drop policy if exists "Allow anon uploads to anexos" on storage.objects;
 
-drop policy if exists "code_select_anon" on public.code;
-
 create policy "Authenticated full access requests"
 on public.requests
 for all
@@ -40,13 +34,6 @@ with check (true);
 
 create policy "Authenticated full access equipments"
 on public.equipments
-for all
-to authenticated
-using (true)
-with check (true);
-
-create policy "Authenticated full access notifications"
-on public.notifications
 for all
 to authenticated
 using (true)
@@ -78,12 +65,6 @@ for all
 to authenticated
 using (true)
 with check (true);
-
-create policy "Authenticated read code"
-on public.code
-for select
-to authenticated
-using (true);
 
 create policy "Authenticated read anexos objects"
 on storage.objects

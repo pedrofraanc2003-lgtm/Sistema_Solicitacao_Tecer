@@ -1,10 +1,10 @@
 import React, { Suspense, lazy } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { AppDataProvider, useAppData } from './app/AppDataContext';
+import { AppProviders } from './app/AppProviders';
 import AppShell from './app/AppShell';
+import { useAuth, useUi } from './app/hooks';
 import LoadingScreen from './app/LoadingScreen';
-import { ToastProvider } from './ui/ToastProvider';
-import { UserRole } from './types';
+import { canAccessRoute } from './domains/auth/permissions';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Requests = lazy(() => import('./pages/Requests'));
@@ -17,32 +17,8 @@ const OilAnalysis = lazy(() => import('./pages/OilAnalysis'));
 const Login = lazy(() => import('./pages/Login'));
 
 function ProtectedApp() {
-  const {
-    user,
-    isAuthLoading,
-    requests,
-    equipments,
-    users,
-    auditLogs,
-    workshopItems,
-    notifications,
-    theme,
-    setTheme,
-    markNotificationsRead,
-    refreshData,
-    isRefreshing,
-    cloudStatus,
-    logout,
-    createRequestAction,
-    updateRequestAction,
-    saveEquipmentAction,
-    saveManagedUserAction,
-    appendAuditAction,
-    createWorkshopCardAction,
-    saveWorkshopItemAction,
-    removeWorkshopItemAction,
-    setAuthenticatedUser,
-  } = useAppData();
+  const { user, isAuthLoading } = useAuth();
+  const { theme, setTheme, notifications, markNotificationsRead } = useUi();
 
   if (isAuthLoading) {
     return <LoadingScreen />;
@@ -51,90 +27,26 @@ function ProtectedApp() {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <Routes>
-        <Route
-          path="/login"
-          element={user ? <Navigate to="/" replace /> : <Login onLogin={setAuthenticatedUser} users={users} />}
-        />
-        <Route
-          path="/forgot-password"
-          element={user ? <Navigate to="/" replace /> : <Login onLogin={setAuthenticatedUser} users={users} />}
-        />
-        <Route
-          path="/reset-password"
-          element={user ? <Navigate to="/" replace /> : <Login onLogin={setAuthenticatedUser} users={users} />}
-        />
+        <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+        <Route path="/forgot-password" element={user ? <Navigate to="/" replace /> : <Login />} />
+        <Route path="/reset-password" element={user ? <Navigate to="/" replace /> : <Login />} />
 
         {!user ? (
           <Route path="*" element={<Navigate to="/login" replace />} />
         ) : (
-          <Route
-            element={
-              <AppShell
-                user={user}
-                theme={theme}
-                setTheme={setTheme}
-                notifications={notifications}
-                markNotificationsRead={markNotificationsRead}
-                refreshData={refreshData}
-                isRefreshing={isRefreshing}
-                cloudStatus={cloudStatus}
-                logout={logout}
-              />
-            }
-          >
-            <Route path="/" element={<Dashboard requests={requests} />} />
+          <Route element={<AppShell user={user} theme={theme} setTheme={setTheme} notifications={notifications} markNotificationsRead={markNotificationsRead} />}>
+            <Route path="/" element={<Dashboard />} />
             <Route path="/requests" element={<Navigate to="/requests/new" replace />} />
-            <Route
-              path="/requests/new"
-              element={<Requests user={user} requests={requests} equipments={equipments} onCreateRequest={createRequestAction} onUpdateRequest={updateRequestAction} viewMode="new" />}
-            />
-            <Route
-              path="/requests/mine"
-              element={<Requests user={user} requests={requests} equipments={equipments} onCreateRequest={createRequestAction} onUpdateRequest={updateRequestAction} viewMode="mine" />}
-            />
-            <Route
-              path="/requests/in-progress"
-              element={<Requests user={user} requests={requests} equipments={equipments} onCreateRequest={createRequestAction} onUpdateRequest={updateRequestAction} viewMode="inProgress" />}
-            />
-            <Route
-              path="/requests/all"
-              element={
-                user.role === UserRole.ADMIN ? (
-                  <Requests user={user} requests={requests} equipments={equipments} onCreateRequest={createRequestAction} onUpdateRequest={updateRequestAction} viewMode="all" />
-                ) : (
-                  <Navigate to="/requests/new" replace />
-                )
-              }
-            />
-            <Route
-              path="/equipments"
-              element={<Equipments user={user} equipments={equipments} onSaveEquipment={saveEquipmentAction} onAudit={appendAuditAction} />}
-            />
-            <Route
-              path="/workshop-kanban"
-              element={
-                <WorkshopKanban
-                  user={user}
-                  equipments={equipments}
-                  items={workshopItems}
-                  onCreateItem={createWorkshopCardAction}
-                  onSaveItem={saveWorkshopItemAction}
-                  onRemoveItem={removeWorkshopItemAction}
-                />
-              }
-            />
-            <Route path="/reports" element={<Reports requests={requests} equipments={equipments} />} />
-            <Route
-              path="/oil-analysis"
-              element={
-                user.role === UserRole.ADMIN || user.role === UserRole.PCM ? <OilAnalysis /> : <Navigate to="/" replace />
-              }
-            />
-            <Route
-              path="/users"
-              element={user.role === UserRole.ADMIN ? <Users users={users} onSaveUser={saveManagedUserAction} onAudit={appendAuditAction} /> : <Navigate to="/" replace />}
-            />
-            <Route path="/audits" element={user.role === UserRole.ADMIN ? <Audits logs={auditLogs} /> : <Navigate to="/" replace />} />
+            <Route path="/requests/new" element={<Requests viewMode="new" />} />
+            <Route path="/requests/mine" element={<Requests viewMode="mine" />} />
+            <Route path="/requests/in-progress" element={<Requests viewMode="inProgress" />} />
+            <Route path="/requests/all" element={<Requests viewMode="all" />} />
+            <Route path="/equipments" element={<Equipments />} />
+            <Route path="/workshop-kanban" element={<WorkshopKanban />} />
+            <Route path="/reports" element={canAccessRoute(user, 'reports') ? <Reports /> : <Navigate to="/" replace />} />
+            <Route path="/oil-analysis" element={canAccessRoute(user, 'oilAnalysis') ? <OilAnalysis /> : <Navigate to="/" replace />} />
+            <Route path="/users" element={canAccessRoute(user, 'users') ? <Users /> : <Navigate to="/" replace />} />
+            <Route path="/audits" element={canAccessRoute(user, 'audits') ? <Audits /> : <Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         )}
@@ -144,13 +56,11 @@ function ProtectedApp() {
 }
 
 const App: React.FC = () => (
-  <ToastProvider>
-    <AppDataProvider>
-      <HashRouter>
-        <ProtectedApp />
-      </HashRouter>
-    </AppDataProvider>
-  </ToastProvider>
+  <AppProviders>
+    <HashRouter>
+      <ProtectedApp />
+    </HashRouter>
+  </AppProviders>
 );
 
 export default App;

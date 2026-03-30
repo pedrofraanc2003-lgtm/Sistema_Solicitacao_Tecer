@@ -43,6 +43,11 @@ VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 ```
 
+Observação:
+
+- Os anexos agora usam Cloudinary via Supabase Edge Functions.
+- Nenhum secret do Cloudinary deve ficar no frontend.
+
 ## Execução
 
 Ambiente de desenvolvimento:
@@ -73,6 +78,7 @@ Tabelas acessadas pela aplicação:
 - `equipments`
 - `users`
 - `audit_logs`
+- `request_attachments`
 
 Comportamento da integração:
 
@@ -80,6 +86,18 @@ Comportamento da integração:
 - Se a configuração estiver ausente ou houver falha de comunicação, a aplicação entra em modo local.
 - O status da sincronização aparece na interface como indicador de nuvem.
 - Falhas de acesso são tratadas com logs mais explícitos para facilitar diagnóstico de `URL`, chave, CORS, projeto pausado ou indisponibilidade de rede.
+- Upload e leitura de anexos passam por backend autenticado usando Supabase Edge Functions.
+
+## Anexos no Cloudinary
+
+Arquivos de solicitação são armazenados no Cloudinary em modo privado/autenticado, enquanto o Supabase continua como fonte de verdade dos metadados em `request_attachments`.
+
+Arquivos operacionais:
+
+- `supabase/request_attachments_cloudinary.sql`
+- `supabase/README_CLOUDINARY_ATTACHMENTS.md`
+- `supabase/functions/request-attachments/index.ts`
+- `scripts/migrate-request-attachments-to-cloudinary.mjs`
 
 ## Observações
 

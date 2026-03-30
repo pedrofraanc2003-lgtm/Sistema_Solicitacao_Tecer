@@ -14,7 +14,9 @@ export default defineConfig({
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
           charts: ['recharts'],
-          vendor: ['@supabase/supabase-js', 'lucide-react', 'xlsx'],
+          supabase: ['@supabase/supabase-js'],
+          icons: ['lucide-react'],
+          spreadsheet: ['xlsx'],
         },
       },
     },

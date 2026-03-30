@@ -81,9 +81,26 @@ export interface MaintenanceRequest {
   createdAt: string;
   deadline?: string;
   insumos: Insumo[];
-  attachments: { id: string; url: string; type: 'photo' | 'doc'; name: string; path?: string }[];
+  attachments: RequestAttachment[];
   comments: Comment[];
   history: HistoryEntry[];
+}
+
+export interface RequestAttachment {
+  id: string;
+  url: string;
+  type: 'photo' | 'doc';
+  name: string;
+  path?: string;
+  contentType?: string;
+  sizeBytes?: number;
+  createdAt?: string;
+  publicId?: string;
+  resourceType?: 'image' | 'raw';
+  assetType?: 'authenticated';
+  version?: string;
+  format?: string;
+  migratedAt?: string;
 }
 
 export interface Comment {

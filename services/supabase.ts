@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import { UserStatus, type User } from '../types';
-import { REQUEST_ATTACHMENTS_BUCKET, SUPABASE_FUNCTIONS_BASE_URL, hasSupabaseConfig, supabase } from './supabaseClient';
+import { SUPABASE_FUNCTIONS_BASE_URL, hasSupabaseConfig, supabase } from './supabaseClient';
 
 export { hasSupabaseConfig, supabase };
 
@@ -34,9 +34,9 @@ export const getDatabaseHealthStatus = async (
   const details: string[] = [];
   for (const tableName of tables) {
     try {
-      const { error, count } = await supabase.from(tableName).select('*', { head: true, count: 'exact' });
+      const { error } = await supabase.from(tableName).select('*', { head: true }).limit(1);
       if (error) details.push(`${tableName}: ${error.message}`);
-      else details.push(`${tableName}: acesso OK${typeof count === 'number' ? ` (${count} registros)` : ''}`);
+      else details.push(`${tableName}: acesso OK`);
     } catch (error) {
       details.push(`${tableName}: ${getErrorMessage(error)}`);
     }
@@ -49,61 +49,6 @@ export const getDatabaseHealthStatus = async (
     message: hasFailures ? 'Falhas detectadas na comunicação com o banco' : 'Conexão com o Supabase validada',
     details,
   };
-};
-
-const sanitizeFileName = (fileName: string) =>
-  fileName
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9.-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    .toLowerCase();
-
-export type UploadedRequestAttachment = {
-  id: string;
-  path: string;
-  url: string;
-  type: 'photo' | 'doc';
-  name: string;
-};
-
-export const uploadRequestAttachment = async (requestId: string, file: File): Promise<UploadedRequestAttachment> => {
-  if (!supabase) {
-    throw new Error('Supabase não configurado para upload de arquivos.');
-  }
-
-  const filePath = `requests/${requestId}/${crypto.randomUUID()}-${sanitizeFileName(file.name || 'arquivo')}`;
-  const { error } = await supabase.storage.from(REQUEST_ATTACHMENTS_BUCKET).upload(filePath, file, {
-    cacheControl: '3600',
-    upsert: false,
-    contentType: file.type || undefined,
-  });
-
-  if (error) {
-    throw new Error(`Falha no upload do arquivo "${file.name}": ${error.message}`);
-  }
-
-  return {
-    id: crypto.randomUUID(),
-    path: filePath,
-    url: '',
-    type: file.type.startsWith('image/') ? 'photo' : 'doc',
-    name: file.name,
-  };
-};
-
-export const createRequestAttachmentSignedUrl = async (path: string, expiresIn = 60) => {
-  if (!supabase) {
-    throw new Error('Supabase não configurado para acesso a anexos.');
-  }
-
-  const { data, error } = await supabase.storage.from(REQUEST_ATTACHMENTS_BUCKET).createSignedUrl(path, expiresIn);
-  if (error || !data?.signedUrl) {
-    throw new Error(error?.message || 'Não foi possível gerar link temporário para o anexo.');
-  }
-
-  return data.signedUrl;
 };
 
 export const signInWithIdentifier = async (identifier: string, password: string): Promise<User> => {

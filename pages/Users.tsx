@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Edit, Key, Mail, Plus, Search, Shield, User as UserIcon, XCircle } from 'lucide-react';
+import { useAuditLogsData, useUsersData } from '../app/hooks';
 import { AuditLog, User, UserRole, UserStatus } from '../types';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -22,7 +23,7 @@ interface UsersProps {
   onAudit: (input: Omit<AuditLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'userRole'>) => Promise<void>;
 }
 
-const Users: React.FC<UsersProps> = ({ users, onSaveUser, onAudit }) => {
+const UsersView: React.FC<UsersProps> = ({ users, onSaveUser, onAudit }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -253,4 +254,9 @@ const Users: React.FC<UsersProps> = ({ users, onSaveUser, onAudit }) => {
   );
 };
 
-export default Users;
+export default function Users() {
+  const { users, saveManagedUserAction } = useUsersData();
+  const { appendAuditAction } = useAuditLogsData();
+
+  return <UsersView users={users} onSaveUser={saveManagedUserAction} onAudit={appendAuditAction} />;
+}

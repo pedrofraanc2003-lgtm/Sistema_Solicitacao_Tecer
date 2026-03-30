@@ -14,4 +14,5 @@ export const supabase: SupabaseClient | null = hasSupabaseConfig
   : null;
 
 export const REQUEST_ATTACHMENTS_BUCKET = 'anexos';
+export const REQUEST_ATTACHMENTS_PATH_PREFIX = 'requests';
 export const SUPABASE_FUNCTIONS_BASE_URL = hasSupabaseConfig ? `${SUPABASE_URL}/functions/v1` : '';

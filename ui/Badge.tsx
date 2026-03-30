@@ -6,18 +6,18 @@ interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const toneClasses: Record<NonNullable<BadgeProps['tone']>, string> = {
-  default: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  info: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  success: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  warning: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-  danger: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  default: 'border-[color:var(--color-border)] bg-[rgba(255,255,255,0.54)] text-[color:var(--color-text-soft)] dark:border-[color:var(--color-border)] dark:bg-[rgba(255,255,255,0.05)] dark:text-[color:var(--color-text-soft)]',
+  info: 'border-[rgba(36,93,143,0.16)] bg-[color:var(--color-info-soft)] text-[color:var(--color-info)] dark:border-[rgba(156,196,232,0.2)] dark:bg-[rgba(156,196,232,0.12)] dark:text-[color:var(--color-info)]',
+  success: 'border-[rgba(45,107,87,0.16)] bg-[color:var(--color-success-soft)] text-[color:var(--color-success)] dark:border-[rgba(139,192,162,0.2)] dark:bg-[rgba(139,192,162,0.12)] dark:text-[color:var(--color-success)]',
+  warning: 'border-[rgba(154,106,46,0.16)] bg-[color:var(--color-warning-soft)] text-[color:var(--color-warning)] dark:border-[rgba(217,176,109,0.2)] dark:bg-[rgba(217,176,109,0.12)] dark:text-[color:var(--color-warning)]',
+  danger: 'border-[rgba(161,74,71,0.16)] bg-[color:var(--color-danger-soft)] text-[color:var(--color-danger)] dark:border-[rgba(223,142,139,0.2)] dark:bg-[rgba(223,142,139,0.12)] dark:text-[color:var(--color-danger)]',
 };
 
 export function Badge({ className, tone = 'default', ...props }: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em]',
+        'inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em]',
         toneClasses[tone],
         className
       )}

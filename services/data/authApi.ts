@@ -1,47 +1,57 @@
+import { User } from '../../types';
+import { authenticateLocalUser } from '../authMode';
 import { MOCK_USERS } from '../mockData';
 import { clearLocalSupabaseSession, getCurrentAuthenticatedUser, hasSupabaseConfig, onSupabaseAuthStateChange, sendPasswordResetEmail, signInWithIdentifier, signOutFromSupabase } from '../supabase';
-import { User, UserStatus } from '../../types';
 
 const AUTH_BOOTSTRAP_TIMEOUT_MS = 6000;
+const SESSION_CLEANUP_TIMEOUT_MS = 2000;
+const SIGN_IN_TIMEOUT_MS = 12000;
 
-const withTimeout = async <T>(promise: Promise<T>, timeoutMs = AUTH_BOOTSTRAP_TIMEOUT_MS) =>
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs = AUTH_BOOTSTRAP_TIMEOUT_MS, timeoutMessage = 'Timeout ao validar a sessao atual.') =>
   await Promise.race<T>([
     promise,
     new Promise<T>((_, reject) => {
-      window.setTimeout(() => reject(new Error('Timeout ao validar a sessão atual.')), timeoutMs);
+      window.setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
     }),
   ]);
 
+async function clearLocalSessionSafely() {
+  if (!hasSupabaseConfig) return;
+
+  try {
+    await Promise.race<void>([
+      clearLocalSupabaseSession(),
+      new Promise<void>(resolve => {
+        window.setTimeout(resolve, SESSION_CLEANUP_TIMEOUT_MS);
+      }),
+    ]);
+  } catch {
+    // A limpeza de cache precisa ser best-effort para nao bloquear login/bootstrap.
+  }
+}
+
 export async function getSessionUser() {
   if (!hasSupabaseConfig) return null;
+
   try {
     return await withTimeout(getCurrentAuthenticatedUser());
   } catch {
-    await clearLocalSupabaseSession();
+    await clearLocalSessionSafely();
     return null;
   }
 }
 
 export async function signIn(identifier: string, password: string) {
   if (hasSupabaseConfig) {
-    await clearLocalSupabaseSession();
-    return signInWithIdentifier(identifier, password);
+    await clearLocalSessionSafely();
+    return withTimeout(
+      signInWithIdentifier(identifier, password),
+      SIGN_IN_TIMEOUT_MS,
+      'Timeout ao concluir o login. Tente novamente.',
+    );
   }
 
-  const normalized = identifier.trim().toLowerCase();
-  const user = MOCK_USERS.find(
-    current =>
-      current.status === UserStatus.ATIVO &&
-      (current.username.toLowerCase() === normalized || (current.email || '').toLowerCase() === normalized) &&
-      current.password === password
-  );
-
-  if (!user) {
-    throw new Error('Credenciais inválidas ou usuário inativo.');
-  }
-
-  const { password: _password, ...profile } = user;
-  return profile as User;
+  return authenticateLocalUser(MOCK_USERS, identifier, password) as User;
 }
 
 export async function signOut() {
@@ -66,7 +76,7 @@ export function subscribeToAuthChanges(callback: (user: User | null) => void) {
     try {
       callback(await withTimeout(getCurrentAuthenticatedUser(session)));
     } catch {
-      await clearLocalSupabaseSession();
+      await clearLocalSessionSafely();
       callback(null);
     }
   });

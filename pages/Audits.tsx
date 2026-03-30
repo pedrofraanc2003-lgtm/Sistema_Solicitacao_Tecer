@@ -1,24 +1,9 @@
-﻿
-import React, { useState, useMemo } from 'react';
-import { 
-  Search, 
-  Filter, 
-  Calendar, 
-  User as UserIcon, 
-  Activity,
-  ArrowRight,
-  ShieldAlert,
-  Tag,
-  ClipboardList,
-  Users as UsersIcon
-} from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Activity, ClipboardList, Filter, Search, ShieldAlert, Tag, Users as UsersIcon } from 'lucide-react';
+import { useAuditLogsData } from '../app/hooks';
 import { AuditLog } from '../types';
 
-interface AuditsProps {
-  logs: AuditLog[];
-}
-
-const Audits: React.FC<AuditsProps> = ({ logs }) => {
+function AuditsView({ logs }: { logs: AuditLog[] }) {
   const [search, setSearch] = useState('');
   const [entityFilter, setEntityFilter] = useState<string>('All');
 
@@ -26,21 +11,16 @@ const Audits: React.FC<AuditsProps> = ({ logs }) => {
     let result = [...logs];
 
     if (search) {
-      const s = search.toLowerCase();
-      result = result.filter(log => 
-        log.userName.toLowerCase().includes(s) || 
-        log.entityId.toLowerCase().includes(s) ||
-        log.summary.toLowerCase().includes(s)
-      );
+      const normalizedSearch = search.toLowerCase();
+      result = result.filter(log => log.userName.toLowerCase().includes(normalizedSearch) || log.entityId.toLowerCase().includes(normalizedSearch) || log.summary.toLowerCase().includes(normalizedSearch));
     }
 
     if (entityFilter !== 'All') {
       result = result.filter(log => log.entity === entityFilter);
     }
 
-    // Ordenação: Mais recentes primeiro
-    return result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [logs, search, entityFilter]);
+    return result.sort((left, right) => new Date(right.timestamp).getTime() - new Date(left.timestamp).getTime());
+  }, [entityFilter, logs, search]);
 
   const getEntityIcon = (entity: string) => {
     switch (entity) {
@@ -62,15 +42,15 @@ const Audits: React.FC<AuditsProps> = ({ logs }) => {
   };
 
   return (
-    <div className="tecer-page space-y-6 flex flex-col h-full">
+    <div className="tecer-page flex h-full flex-col space-y-6">
       <div className="tecer-view-header">
         <div className="tecer-view-headline">
           <p className="tecer-view-kicker">Rastreabilidade</p>
-          <h2 className="font-display text-3xl font-extrabold flex items-center gap-2">
+          <h2 className="flex items-center gap-2 font-display text-3xl font-extrabold">
             <ShieldAlert className="text-tecer-primary" />
             Auditoria do Sistema
           </h2>
-          <p className="text-tecer-grayMed text-sm">Registro imutável de ações, mudanças de status e intervenções críticas.</p>
+          <p className="text-sm text-tecer-grayMed">Registro imutável de ações, mudanças de status e intervenções críticas.</p>
         </div>
         <div className="tecer-view-summary">
           <div className="tecer-view-stat">
@@ -83,28 +63,28 @@ const Audits: React.FC<AuditsProps> = ({ logs }) => {
           </div>
           <div className="tecer-view-stat">
             <span className="tecer-view-stat-label">Entidades</span>
-            <span className="tecer-view-stat-value">{new Set(logs.map((log) => log.entity)).size}</span>
+            <span className="tecer-view-stat-value">{new Set(logs.map(log => log.entity)).size}</span>
           </div>
         </div>
       </div>
 
-      <div className="tecer-toolbar bg-white dark:bg-tecer-darkCard p-4 rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-700 flex flex-wrap gap-4 items-center">
-        <div className="flex-1 min-w-[240px] relative">
+      <div className="tecer-toolbar flex flex-wrap items-center gap-4 rounded-[24px] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-tecer-darkCard">
+        <div className="relative min-w-[240px] flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-tecer-grayMed" size={18} />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Pesquisar por usuário, ID ou resumo da alteração..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-tecer-primary"
+            onChange={event => setSearch(event.target.value)}
+            className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-tecer-primary dark:border-gray-700 dark:bg-gray-800"
           />
         </div>
         <div className="flex items-center gap-2">
           <Filter size={18} className="text-tecer-grayMed" />
-          <select 
+          <select
             value={entityFilter}
-            onChange={(e) => setEntityFilter(e.target.value)}
-            className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg py-2 px-4 focus:outline-none"
+            onChange={event => setEntityFilter(event.target.value)}
+            className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 focus:outline-none dark:border-gray-700 dark:bg-gray-800"
           >
             <option value="All">Todas Entidades</option>
             <option value="Solicitação">Solicitações</option>
@@ -114,12 +94,11 @@ const Audits: React.FC<AuditsProps> = ({ logs }) => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-tecer-darkCard rounded-[24px] shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col">
-        {/* Container com rolagem interna e altura máxima calculada para evitar rolagem da página inteira */}
-        <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-320px)] scrollbar-thin">
-          <table className="tecer-table w-full text-left border-collapse">
-            <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 shadow-sm">
-              <tr className="text-tecer-grayMed text-[10px] uppercase font-bold border-b border-gray-100 dark:border-gray-700">
+      <div className="flex flex-col overflow-hidden rounded-[24px] border border-gray-100 bg-white shadow-md dark:border-gray-700 dark:bg-tecer-darkCard">
+        <div className="scrollbar-thin max-h-[calc(100vh-320px)] overflow-x-auto overflow-y-auto">
+          <table className="tecer-table w-full border-collapse text-left">
+            <thead className="sticky top-0 z-10 bg-gray-50 shadow-sm dark:bg-gray-800">
+              <tr className="border-b border-gray-100 text-[10px] font-bold uppercase text-tecer-grayMed dark:border-gray-700">
                 <th className="px-6 py-4">Data/Hora</th>
                 <th className="px-6 py-4">Usuário</th>
                 <th className="px-6 py-4">Ação</th>
@@ -129,59 +108,55 @@ const Audits: React.FC<AuditsProps> = ({ logs }) => {
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {filteredLogs.map(log => (
-                <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                <tr key={log.id} className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30">
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold text-tecer-grayDark dark:text-gray-200">
-                        {new Date(log.timestamp).toLocaleDateString()}
-                      </span>
-                      <span className="text-[10px] text-tecer-grayMed">
-                        {new Date(log.timestamp).toLocaleTimeString()}
-                      </span>
+                      <span className="text-xs font-bold text-tecer-grayDark dark:text-gray-200">{new Date(log.timestamp).toLocaleDateString()}</span>
+                      <span className="text-[10px] text-tecer-grayMed">{new Date(log.timestamp).toLocaleTimeString()}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-tecer-primary/10 text-tecer-primary flex items-center justify-center text-[10px] font-bold">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-tecer-primary/10 text-[10px] font-bold text-tecer-primary">
                         {log.userName.charAt(0)}
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-bold">{log.userName}</span>
-                        <span className="text-[10px] text-tecer-grayMed uppercase">{log.userRole}</span>
+                        <span className="text-[10px] uppercase text-tecer-grayMed">{log.userRole}</span>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getActionColor(log.actionType)}`}>
-                      {log.actionType}
-                    </span>
+                    <span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${getActionColor(log.actionType)}`}>{log.actionType}</span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1 text-xs font-semibold text-tecer-primary dark:text-tecer-secondary">
                       {getEntityIcon(log.entity)}
                       <span>{log.entityId}</span>
                     </div>
-                    <span className="text-[10px] text-tecer-grayMed uppercase">{log.entity}</span>
+                    <span className="text-[10px] uppercase text-tecer-grayMed">{log.entity}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-xs text-tecer-grayDark dark:text-gray-300 max-w-md">{log.summary}</p>
+                    <p className="max-w-md text-xs text-tecer-grayDark dark:text-gray-300">{log.summary}</p>
                   </td>
                 </tr>
               ))}
-              {filteredLogs.length === 0 && (
+              {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-tecer-grayMed italic opacity-50">
+                  <td colSpan={5} className="px-6 py-12 text-center italic text-tecer-grayMed opacity-50">
                     Nenhum registro de auditoria encontrado.
                   </td>
                 </tr>
-              )}
+              ) : null}
             </tbody>
           </table>
         </div>
       </div>
     </div>
   );
-};
+}
 
-export default Audits;
-
+export default function Audits() {
+  const { auditLogs } = useAuditLogsData();
+  return <AuditsView logs={auditLogs} />;
+}

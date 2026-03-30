@@ -3,15 +3,82 @@ import {
   HistoryEntry,
   Insumo,
   MaintenanceRequest,
+  RequestAttachment,
   RequestStatus,
   RequestType,
   User,
 } from '../../types';
 import { canEditDeadline, canTransitionRequest } from '../../domains/requests/workflow';
 import { MOCK_REQUESTS } from '../mockData';
-import { createRequestAttachmentSignedUrl, uploadRequestAttachment } from '../supabase';
+import { deleteRequestAttachmentAsset, openRequestAttachment as openAttachment, uploadRequestAttachment } from '../attachments';
 import { supabase } from '../supabaseClient';
 import { safeUuid, sortByNewest } from './utils';
+
+type RequestAttachmentRow = {
+  id: string;
+  file_name: string;
+  storage_path: string;
+  file_type: 'photo' | 'doc';
+  content_type?: string | null;
+  size_bytes?: number | null;
+  created_at?: string | null;
+  cloudinary_public_id?: string | null;
+  cloudinary_resource_type?: 'image' | 'raw' | null;
+  cloudinary_asset_type?: 'authenticated' | null;
+  cloudinary_version?: string | null;
+  cloudinary_bytes?: number | null;
+  cloudinary_format?: string | null;
+  original_filename?: string | null;
+  migrated_at?: string | null;
+};
+
+type RequestRow = Omit<MaintenanceRequest, 'attachments'> & {
+  attachments?: MaintenanceRequest['attachments'];
+  request_attachments?: RequestAttachmentRow[] | null;
+};
+
+const mapAttachmentRow = (row: RequestAttachmentRow): RequestAttachment => ({
+  id: String(row.id),
+  name: String(row.original_filename || row.file_name),
+  path: row.storage_path ? String(row.storage_path) : undefined,
+  url: '',
+  type: row.file_type,
+  contentType: row.content_type || undefined,
+  sizeBytes:
+    typeof row.cloudinary_bytes === 'number'
+      ? row.cloudinary_bytes
+      : typeof row.size_bytes === 'number'
+        ? row.size_bytes
+        : undefined,
+  createdAt: row.created_at || undefined,
+  publicId: row.cloudinary_public_id || undefined,
+  resourceType: row.cloudinary_resource_type || undefined,
+  assetType: row.cloudinary_asset_type || undefined,
+  version: row.cloudinary_version || undefined,
+  format: row.cloudinary_format || undefined,
+  migratedAt: row.migrated_at || undefined,
+});
+
+const mapRequestRow = (row: RequestRow): MaintenanceRequest => ({
+  ...row,
+  attachments: row.request_attachments?.map(mapAttachmentRow) ?? row.attachments ?? [],
+});
+
+const hasMissingAttachmentColumnError = (error: { message?: string } | null) => {
+  const message = error?.message?.toLowerCase() || '';
+  return (
+    message.includes('size_bytes') ||
+    message.includes('created_at') ||
+    message.includes('cloudinary_public_id') ||
+    message.includes('cloudinary_resource_type') ||
+    message.includes('cloudinary_asset_type') ||
+    message.includes('cloudinary_version') ||
+    message.includes('cloudinary_bytes') ||
+    message.includes('cloudinary_format') ||
+    message.includes('original_filename') ||
+    message.includes('migrated_at')
+  );
+};
 
 export type RequestCreateInput = Pick<
   MaintenanceRequest,
@@ -30,9 +97,18 @@ export type RequestUpdateInput = Partial<
 
 export async function listRequests() {
   if (!supabase) return sortByNewest(MOCK_REQUESTS);
-  const { data, error } = await supabase.from('requests').select('*');
+  let { data, error } = await supabase
+    .from('requests')
+    .select(
+      '*, request_attachments(id, file_name, storage_path, file_type, content_type, size_bytes, created_at, cloudinary_public_id, cloudinary_resource_type, cloudinary_asset_type, cloudinary_version, cloudinary_bytes, cloudinary_format, original_filename, migrated_at)'
+    );
+  if (error && hasMissingAttachmentColumnError(error)) {
+    ({ data, error } = await supabase
+      .from('requests')
+      .select('*, request_attachments(id, file_name, storage_path, file_type, content_type, created_at)'));
+  }
   if (error) throw new Error(error.message);
-  return sortByNewest((data || []) as MaintenanceRequest[]);
+  return sortByNewest(((data || []) as RequestRow[]).map(mapRequestRow));
 }
 
 async function nextRequestId() {
@@ -50,7 +126,18 @@ async function nextRequestId() {
 
 async function uploadAttachments(requestId: string, files: File[] = []) {
   if (!files.length) return [];
-  return Promise.all(files.map(file => uploadRequestAttachment(requestId, file)));
+  const uploaded: RequestAttachment[] = [];
+
+  try {
+    for (const file of files) {
+      uploaded.push(await uploadRequestAttachment(requestId, file));
+    }
+  } catch (error) {
+    await Promise.all(uploaded.map(attachment => deleteRequestAttachmentAsset(attachment.id)));
+    throw error;
+  }
+
+  return uploaded;
 }
 
 export async function createRequest(actor: User, input: RequestCreateInput) {
@@ -62,7 +149,6 @@ export async function createRequest(actor: User, input: RequestCreateInput) {
   }
 
   const id = await nextRequestId();
-  const attachments = await uploadAttachments(id, input.attachments);
   const history: HistoryEntry[] = [
     {
       id: safeUuid(),
@@ -85,15 +171,35 @@ export async function createRequest(actor: User, input: RequestCreateInput) {
     requesterId: actor.id,
     createdAt: new Date().toISOString(),
     insumos: input.insumos.map(item => ({ ...item, id: item.id || safeUuid() })),
-    attachments,
+    attachments: [],
     comments: [],
     history,
   };
 
-  if (!supabase) return request;
-  const { error } = await supabase.from('requests').insert(request);
+  if (!supabase) {
+    const attachments = await uploadAttachments(id, input.attachments);
+    return {
+      ...request,
+      attachments,
+    };
+  }
+
+  const { error } = await supabase.from('requests').insert({
+    ...request,
+    attachments: [],
+  });
   if (error) throw new Error(error.message);
-  return request;
+
+  try {
+    const attachments = await uploadAttachments(id, input.attachments);
+    return {
+      ...request,
+      attachments,
+    };
+  } catch (error) {
+    await supabase.from('requests').delete().eq('id', id);
+    throw error;
+  }
 }
 
 export async function updateRequest(actor: User, current: MaintenanceRequest, input: RequestUpdateInput) {
@@ -137,15 +243,20 @@ export async function updateRequest(actor: User, current: MaintenanceRequest, in
   };
 
   if (!supabase) return nextRequest;
-  const { error } = await supabase.from('requests').upsert(nextRequest, { onConflict: 'id' });
+  const { error } = await supabase.from('requests').upsert(
+    {
+      ...nextRequest,
+      attachments: [],
+    },
+    { onConflict: 'id' }
+  );
   if (error) throw new Error(error.message);
   return nextRequest;
 }
 
-export async function openRequestAttachment(path?: string, url?: string) {
-  if (path) return createRequestAttachmentSignedUrl(path);
-  if (url) return url;
-  throw new Error('Anexo sem caminho válido para abertura.');
+export async function openRequestAttachment(attachment: RequestAttachment) {
+  if (attachment.url && !attachment.publicId && !attachment.path) return attachment.url;
+  return openAttachment(attachment);
 }
 
 export function appendComment(current: MaintenanceRequest, actor: User, text: string) {

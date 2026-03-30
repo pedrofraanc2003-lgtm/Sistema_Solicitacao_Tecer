@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Activity, CheckCircle2, Edit, Hash, Plus, Search, Tag, Wrench, XCircle } from 'lucide-react';
+import { useAuditLogsData, useAuth, useEquipmentsData } from '../app/hooks';
 import { AuditLog, Equipment, User, UserRole, UserStatus } from '../types';
+import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import Input from '../ui/Input';
@@ -14,7 +16,10 @@ interface EquipmentsProps {
   onAudit: (input: Omit<AuditLog, 'id' | 'timestamp' | 'userId' | 'userName' | 'userRole'>) => Promise<void>;
 }
 
-const Equipments: React.FC<EquipmentsProps> = ({ user, equipments, onSaveEquipment, onAudit }) => {
+const fieldLabelClassName = 'mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-tecer-grayMed';
+const textareaClassName = 'h-24 w-full resize-none rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-soft)] px-4 py-3 text-sm text-[color:var(--color-text)] shadow-[var(--shadow-inset)] outline-none hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-surface-tint)] focus:border-[color:var(--color-secondary)] focus:bg-[color:var(--color-surface-strong)] focus:shadow-[var(--shadow-focus)] dark:border-[color:var(--color-border)] dark:bg-[rgba(19,44,72,0.72)] dark:text-[color:var(--color-text)] dark:hover:bg-[rgba(24,53,85,0.88)] dark:focus:bg-[rgba(24,53,85,0.96)]';
+
+const EquipmentsView: React.FC<EquipmentsProps> = ({ user, equipments, onSaveEquipment, onAudit }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
@@ -56,7 +61,7 @@ const Equipments: React.FC<EquipmentsProps> = ({ user, equipments, onSaveEquipme
       entity: 'Equipamento',
       entityId: saved.tag,
       summary: editingEquipment
-        ? `Atualizou informações do equipamento ${saved.tag}`
+        ? `Atualizou informacoes do equipamento ${saved.tag}`
         : `Cadastrou novo equipamento: ${saved.name}`,
     });
     closeModal();
@@ -113,94 +118,99 @@ const Equipments: React.FC<EquipmentsProps> = ({ user, equipments, onSaveEquipme
         </div>
       </Toolbar>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredEquipments.map(equipment => (
-          <div key={equipment.id} className="group relative overflow-hidden rounded-[24px] border border-gray-100 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-gray-700 dark:bg-tecer-darkCard">
-            <div className={`absolute right-0 top-0 rounded-bl-xl px-3 py-1 text-[10px] font-bold uppercase ${equipment.status === UserStatus.ATIVO ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              {equipment.status}
-            </div>
-            <div className="mb-4 flex items-start gap-4">
-              <div className="rounded-lg bg-tecer-bgLight p-3 text-tecer-primary dark:bg-gray-800">
-                <Wrench size={24} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 text-xs font-bold text-tecer-secondary">
-                  <Tag size={12} />
-                  {equipment.tag}
+      {filteredEquipments.length ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {filteredEquipments.map(equipment => (
+            <div key={equipment.id} className="group rounded-[24px] border border-[color:var(--color-border)] bg-[color:var(--color-surface-strong)] p-5 shadow-[var(--shadow-card)] transition-all duration-150 hover:-translate-y-0.5 dark:border-[color:var(--color-border)] dark:bg-[color:var(--color-surface)]">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-primary-ghost)] text-tecer-primary dark:bg-[rgba(72,163,255,0.14)]">
+                    <Wrench size={22} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-tecer-secondary">
+                      <Tag size={12} />
+                      {equipment.tag}
+                    </div>
+                    <h4 className="mt-2 text-lg font-bold leading-tight text-tecer-grayDark dark:text-white">{equipment.name}</h4>
+                    <p className="mt-1 text-sm text-tecer-grayMed">{equipment.type}</p>
+                  </div>
                 </div>
-                <h4 className="mt-1 text-lg font-bold leading-tight">{equipment.name}</h4>
-                <p className="mt-1 text-xs text-tecer-grayMed">{equipment.type}</p>
+                <Badge tone={equipment.status === UserStatus.ATIVO ? 'success' : 'danger'}>{equipment.status}</Badge>
               </div>
-            </div>
 
-            {equipment.notes ? (
-              <p className="mb-4 rounded bg-gray-50 p-2 text-xs italic text-tecer-grayMed dark:bg-gray-800/50">"{equipment.notes}"</p>
-            ) : null}
-
-            <div className="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
-              <span className="flex items-center gap-1 text-[10px] text-tecer-grayMed">
-                <Activity size={12} />
-                Pronto para manutenção
-              </span>
-              {canManage ? (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setEditingEquipment(equipment);
-                      setFormData(equipment);
-                      setIsModalOpen(true);
-                    }}
-                    className="rounded-full p-2 text-tecer-primary transition-colors hover:bg-tecer-bgLight dark:hover:bg-gray-700"
-                  >
-                    <Edit size={18} />
-                  </button>
-                  <button
-                    onClick={() => void toggleStatus(equipment)}
-                    className={`rounded-full p-2 transition-colors hover:bg-tecer-bgLight dark:hover:bg-gray-700 ${equipment.status === UserStatus.ATIVO ? 'text-orange-500' : 'text-green-500'}`}
-                  >
-                    {equipment.status === UserStatus.ATIVO ? <XCircle size={18} /> : <CheckCircle2 size={18} />}
-                  </button>
-                </div>
+              {equipment.notes ? (
+                <p className="mt-4 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-soft)] px-4 py-3 text-sm leading-6 text-tecer-grayMed dark:border-[color:var(--color-border)] dark:bg-[rgba(255,255,255,0.04)]">
+                  {equipment.notes}
+                </p>
               ) : null}
-            </div>
-          </div>
-        ))}
-      </div>
 
-      {!filteredEquipments.length ? (
-        <EmptyState icon={Wrench} title="Nenhum equipamento localizado" description="Ajuste os filtros ou cadastre um novo ativo operacional." />
-      ) : null}
+              <div className="mt-5 flex items-center justify-between gap-3 border-t border-[color:var(--color-border)] pt-4 dark:border-[color:var(--color-border)]">
+                <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-tecer-grayMed">
+                  <Activity size={14} />
+                  Pronto para manutencao
+                </span>
+
+                {canManage ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingEquipment(equipment);
+                        setFormData(equipment);
+                        setIsModalOpen(true);
+                      }}
+                      className="rounded-full p-2 text-tecer-primary transition-colors hover:bg-[color:var(--color-primary-ghost)] dark:hover:bg-[rgba(72,163,255,0.14)]"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void toggleStatus(equipment)}
+                      className={`rounded-full p-2 transition-colors hover:bg-[color:var(--color-surface-soft)] dark:hover:bg-[rgba(255,255,255,0.06)] ${equipment.status === UserStatus.ATIVO ? 'text-orange-500' : 'text-green-500'}`}
+                    >
+                      {equipment.status === UserStatus.ATIVO ? <XCircle size={18} /> : <CheckCircle2 size={18} />}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState icon={Wrench} title="Nenhum equipamento localizado" description="Ajuste os filtros ou cadastre um novo ativo operacional." action={canManage ? <Button onClick={() => setIsModalOpen(true)}>Cadastrar equipamento</Button> : null} />
+      )}
 
       {isModalOpen ? (
         <Modal title={editingEquipment ? 'Editar equipamento' : 'Novo equipamento'} onClose={closeModal} className="max-w-lg">
-          <form onSubmit={handleSubmit} className="space-y-6 p-8">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-6 p-6 md:p-8">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">TAG / Código</label>
+                <label className={fieldLabelClassName}>TAG / Codigo</label>
                 <div className="relative">
                   <Hash size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-tecer-grayMed" />
                   <Input required value={formData.tag || ''} onChange={event => setFormData(prev => ({ ...prev, tag: event.target.value.toUpperCase() }))} placeholder="Ex: EMP-001" className="pl-10" />
                 </div>
               </div>
               <div>
-                <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">Categoria</label>
-                <Input value={formData.type || ''} onChange={event => setFormData(prev => ({ ...prev, type: event.target.value }))} placeholder="Ex: Movimentação" />
+                <label className={fieldLabelClassName}>Categoria</label>
+                <Input value={formData.type || ''} onChange={event => setFormData(prev => ({ ...prev, type: event.target.value }))} placeholder="Ex: Movimentacao" />
               </div>
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">Nome do equipamento</label>
+              <label className={fieldLabelClassName}>Nome do equipamento</label>
               <Input required value={formData.name || ''} onChange={event => setFormData(prev => ({ ...prev, name: event.target.value }))} placeholder="Ex: Empilhadeira Reach Stacker" />
             </div>
 
             <div>
-              <label className="mb-2 block text-xs font-bold uppercase text-tecer-grayMed">Observações</label>
-              <textarea value={formData.notes || ''} onChange={event => setFormData(prev => ({ ...prev, notes: event.target.value }))} placeholder="Informações técnicas relevantes..." className="h-24 w-full resize-none rounded-lg bg-gray-50 p-3 dark:bg-gray-800" />
+              <label className={fieldLabelClassName}>Observacoes</label>
+              <textarea value={formData.notes || ''} onChange={event => setFormData(prev => ({ ...prev, notes: event.target.value }))} placeholder="Informacoes tecnicas relevantes..." className={textareaClassName} />
             </div>
 
-            <div className="flex items-center gap-4 pt-4">
-              <Button type="button" variant="secondary" onClick={closeModal} className="flex-1">Cancelar</Button>
-              <Button type="submit" className="flex-1">{editingEquipment ? 'Salvar alterações' : 'Cadastrar'}</Button>
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <Button type="button" variant="secondary" onClick={closeModal} className="sm:min-w-[140px]">Cancelar</Button>
+              <Button type="submit" className="sm:min-w-[180px]">{editingEquipment ? 'Salvar alteracoes' : 'Cadastrar equipamento'}</Button>
             </div>
           </form>
         </Modal>
@@ -209,4 +219,14 @@ const Equipments: React.FC<EquipmentsProps> = ({ user, equipments, onSaveEquipme
   );
 };
 
-export default Equipments;
+export default function Equipments() {
+  const { user } = useAuth();
+  const { equipments, saveEquipmentAction } = useEquipmentsData();
+  const { appendAuditAction } = useAuditLogsData();
+
+  if (!user) {
+    return null;
+  }
+
+  return <EquipmentsView user={user} equipments={equipments} onSaveEquipment={saveEquipmentAction} onAudit={appendAuditAction} />;
+}
